@@ -638,7 +638,7 @@ $("#reset").onclick=()=>{if(confirm("Clear all saved recordings, transcripts, Ro
 
 /* Copy live link */
 $("#copyurl").onclick=()=>{
-  const u="https://scaruana33-code.github.io/mock-interview/";
+  const u="https://scaruana33-code.github.io/mock-interviews2/";
   if(navigator.clipboard){ navigator.clipboard.writeText(u).then(()=>{ const b=$("#copyurl");const t=b.textContent;b.textContent="✓ Copied!";setTimeout(()=>b.textContent=t,1500); }).catch(()=>prompt("Copy this link:",u)); }
   else prompt("Copy this link:",u);
 };
