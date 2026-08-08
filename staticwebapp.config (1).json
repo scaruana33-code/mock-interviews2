@@ -1,0 +1,11 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html"
+  },
+  "globalHeaders": {
+    "Permissions-Policy": "microphone=(self)"
+  },
+  "mimeTypes": {
+    ".html": "text/html"
+  }
+}
