@@ -1,6 +1,5 @@
 name: Deploy Rose to GitHub Pages
-
-# Auto-publishes the site to https://scaruana33-code.github.io/mock-interview/
+# Auto-publishes the site to https://scaruana33-code.github.io/mock-interviews2/
 # every time you push to the main branch.
 
 on:
