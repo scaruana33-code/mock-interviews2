@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coach Rose Nylund's Mock Interview Studio</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800;900&family=Lato:wght@300;400;700&family=Great+Vibes&display=swap" rel="stylesheet">
+
+    <style>
+        /* ============================================
+           ROOT VARIABLES — ROSE THEME
+           ============================================ */
+        :root {
+            --rose-blush: #E8A0BF;
+            --rose-deep: #C26D8E;
+            --rose-light: #FDF0F5;
+            --rose-glow: #F5C6D9;
+            --gold-warm: #F5D5A0;
+            --gold-accent: #D4A843;
+            --navy-deep: #1B2A4A;
+            --charcoal: #2D2D2D;
+            --white-soft: #FEFEFE;
+            --shadow-rose: rgba(194, 109, 142, 0.3);
+            --shadow-dark: rgba(27, 42, 74, 0.2);
+        }
+
+        /* ============================================
+           GLOBAL RESET & BASE
+           ============================================ */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            background: var(--navy-deep);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ============================================
+           BACKGROUND — ANIMATED GRADIENT
+           ============================================ */
+        .bg-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                135deg,
+                var(--navy-deep) 0%,
+                #2A1A2E 25%,
+                #1B2A4A 50%,
+                #2A1A2E 75%,
+                var(--navy-deep) 100%
+            );
+            background-size: 400% 400%;
+            animation: gradientShift 12s ease infinite;
+            z-index: 0;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* ============================================
+           FLOATING ROSE PETALS — PARTICLE EFFECT
+           ============================================ */
+        .petal {
+            position: fixed;
+            width: 12px;
+            height: 12px;
+            background: var(--rose-blush);
+            border-radius: 50% 0 50% 50%;
+            opacity: 0;
+            z-index: 1;
+            pointer-events: none;
+            animation: floatPetal linear infinite;
+        }
+
+        .petal:nth-child(odd) {
+            background: var(--rose-glow);
+        }
+
+        .petal:nth-child(3n) {
+            background: var(--gold-warm);
+            width: 8px;
+            height: 8px;
+        }
+
+        @keyframes floatPetal {
+            0% {
+                opacity: 0;
+                transform: translateY(100vh) rotate(0deg) scale(0.5);
+            }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.4;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-10vh) rotate(720deg) scale(1.2);
+            }
+        }
+
+        /* ============================================
+           MAIN CONTAINER
+           ============================================ */
+        .title-card {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            max-width: 900px;
+            padding: 40px;
+        }
+
+        /* ============================================
+           ROSE EMOJI — TOP ICON
+           ============================================ */
+        .rose-icon {
+            font-size: 4rem;
+            opacity: 0;
+            animation: fadeInScale 1s ease-out 0.5s forwards;
+            filter: drop-shadow(0 0 20px var(--shadow-rose));
+            margin-bottom: 10px;
+        }
+
+        /* ============================================
+           TOP LINE — "COACH ROSE NYLUND PRESENTS"
+           ============================================ */
+        .presents-line {
+            font-family: 'Lato', sans-serif;
+            font-weight: 300;
+            font-size: 0.95rem;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            color: var(--rose-blush);
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 1s forwards;
+            margin-bottom: 20px;
+        }
+
+        /* ============================================
+           DECORATIVE DIVIDER — TOP
+           ============================================ */
+        .divider-top {
+            width: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--rose-blush), var(--gold-warm), var(--rose-blush), transparent);
+            margin: 0 auto 30px;
+            animation: expandLine 1.5s ease-out 1.5s forwards;
+        }
+
+        @keyframes expandLine {
+            to { width: 80%; }
+        }
+
+        /* ============================================
+           MAIN TITLE — "THE MOCK INTERVIEW STUDIO"
+           ============================================ */
+        .main-title {
+            font-family: 'Playfair Display', serif;
+            font-weight: 900;
+            font-size: clamp(2rem, 6vw, 4.5rem);
+            line-height: 1.1;
+            color: var(--white-soft);
+            text-shadow:
+                0 0 40px var(--shadow-rose),
+                0 0 80px rgba(194, 109, 142, 0.15),
+                0 2px 4px var(--shadow-dark);
+            opacity: 0;
+            animation: fadeInScale 1.2s ease-out 2s forwards;
+            margin-bottom: 5px;
+        }
+
+        .main-title .the {
+            display: block;
+            font-size: 0.4em;
+            font-weight: 400;
+            letter-spacing: 12px;
+            text-transform: uppercase;
+            color: var(--gold-warm);
+            margin-bottom: 8px;
+        }
+
+        .main-title .studio {
+            display: block;
+            background: linear-gradient(135deg, var(--rose-blush), var(--gold-warm), var(--rose-blush));
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmerText 3s linear infinite 3s;
+        }
+
+        @keyframes shimmerText {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        /* ============================================
+           SUBTITLE — "Coach Rose Nylund's"
+           ============================================ */
+        .subtitle {
+            font-family: 'Great Vibes', cursive;
+            font-size: clamp(1.5rem, 4vw, 2.8rem);
+            color: var(--rose-blush);
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 3.2s forwards;
+            margin-top: 15px;
+            text-shadow: 0 0 30px var(--shadow-rose);
+        }
+
+        /* ============================================
+           DECORATIVE DIVIDER — BOTTOM
+           ============================================ */
+        .divider-bottom {
+            width: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-warm), var(--rose-blush), var(--gold-warm), transparent);
+            margin: 25px auto;
+            animation: expandLine 1.5s ease-out 3.8s forwards;
+        }
+
+        /* ============================================
+           TAGLINE
+           ============================================ */
+        .tagline {
+            font-family: 'Lato', sans-serif;
+            font-weight: 300;
+            font-size: clamp(0.9rem, 2vw, 1.2rem);
+            letter-spacing: 3px;
+            color: var(--gold-warm);
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 4.3s forwards;
+            margin-bottom: 8px;
+        }
+
+        /* ============================================
+           FEATURE PILLS
+           ============================================ */
+        .feature-pills {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 20px;
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 5s forwards;
+        }
+
+        .pill {
+            background: rgba(232, 160, 191, 0.1);
+            border: 1px solid rgba(232, 160, 191, 0.3);
+            color: var(--rose-light);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .pill:hover {
+            background: rgba(232, 160, 191, 0.25);
+            border-color: var(--rose-blush);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px var(--shadow-rose);
+        }
+
+        /* ============================================
+           BOTTOM BRANDING
+           ============================================ */
+        .branding {
+            margin-top: 35px;
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 5.8s forwards;
+        }
+
+        .brand-name {
+            font-family: 'Lato', sans-serif;
+            font-weight: 700;
+            font-size: 0.75rem;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: var(--rose-blush);
+            opacity: 0.7;
+        }
+
+        .brand-tagline {
+            font-family: 'Lato', sans-serif;
+            font-weight: 300;
+            font-size: 0.65rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--gold-warm);
+            opacity: 0.5;
+            margin-top: 5px;
+        }
+
+        /* ============================================
+           CTA BUTTON — "ENTER THE STUDIO"
+           ============================================ */
+        .cta-container {
+            margin-top: 30px;
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 6.5s forwards;
+        }
+
+        .cta-button {
+            display: inline-block;
+            font-family: 'Lato', sans-serif;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            text-decoration: none;
+            color: var(--navy-deep);
+            background: linear-gradient(135deg, var(--rose-blush), var(--gold-warm));
+            padding: 14px 45px;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            box-shadow:
+                0 4px 15px var(--shadow-rose),
+                0 0 40px rgba(232, 160, 191, 0.2);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow:
+                0 8px 30px var(--shadow-rose),
+                0 0 60px rgba(232, 160, 191, 0.3);
+        }
+
+        .cta-button:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        /* ============================================
+           ROSE QUOTE — BOTTOM WHISPER
+           ============================================ */
+        .rose-quote {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Great Vibes', cursive;
+            font-size: 1.1rem;
+            color: var(--rose-glow);
+            opacity: 0;
+            animation: fadeInUp 1.2s ease-out 7.5s forwards;
+            white-space: nowrap;
+            text-shadow: 0 0 20px var(--shadow-rose);
+            z-index: 10;
+        }
+
+        /* ============================================
+           CORNER ACCENTS
+           ============================================ */
+        .corner {
+            position: fixed;
+            width: 80px;
+            height: 80px;
+            border-color: var(--rose-blush);
+            border-style: solid;
+            opacity: 0;
+            animation: fadeIn 1s ease-out 4.8s forwards;
+            z-index: 5;
+        }
+
+        .corner--tl {
+            top: 30px;
+            left: 30px;
+            border-width: 2px 0 0 2px;
+        }
+
+        .corner--tr {
+            top: 30px;
+            right: 30px;
+            border-width: 2px 2px 0 0;
+        }
+
+        .corner--bl {
+            bottom: 30px;
+            left: 30px;
+            border-width: 0 0 2px 2px;
+        }
+
+        .corner--br {
+            bottom: 30px;
+            right: 30px;
+            border-width: 0 2px 2px 0;
+        }
+
+        /* ============================================
+           ANIMATIONS
+           ============================================ */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 0.4; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 600px) {
+            .title-card { padding: 20px; }
+            .presents-line { font-size: 0.7rem; letter-spacing: 4px; }
+            .feature-pills { gap: 8px; }
+            .pill { font-size: 0.65rem; padding: 6px 14px; }
+            .corner { width: 40px; height: 40px; }
+            .rose-quote { font-size: 0.85rem; }
+            .cta-button { padding: 12px 30px; font-size: 0.75rem; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ANIMATED BACKGROUND -->
+    <div class="bg-layer"></div>
+
+    <!-- FLOATING ROSE PETALS (generated by JS) -->
+    <div id="petals-container"></div>
+
+    <!-- CORNER ACCENTS -->
+    <div class="corner corner--tl"></div>
+    <div class="corner corner--tr"></div>
+    <div class="corner corner--bl"></div>
+    <div class="corner corner--br"></div>
+
+    <!-- ============================================
+         MAIN TITLE CARD
+         ============================================ -->
+    <div class="title-card">
+
+        <!-- Rose Icon -->
+        <div class="rose-icon">🌹</div>
+
+        <!-- Presents Line -->
+        <div class="presents-line">Coach Rose Nylund Presents</div>
+
+        <!-- Top Divider -->
+        <div class="divider-top"></div>
+
+        <!-- Main Title -->
+        <h1 class="main-title">
+            <span class="the">— The —</span>
+            Mock Interview
+            <span class="studio">Studio</span>
+        </h1>
+
+        <!-- Subtitle -->
+        <div class="subtitle">Practice. Record. Hear It Back. Tighten It Up.</div>
+
+        <!-- Bottom Divider -->
+        <div class="divider-bottom"></div>
+
+        <!-- Tagline -->
+        <div class="tagline">AI-Powered Interview Coaching That Builds You Up</div>
+
+        <!-- Feature Pills -->
+        <div class="feature-pills">
+            <span class="pill">🎤 Record</span>
+            <span class="pill">🔊 Playback</span>
+            <span class="pill">🌹 AI Grading</span>
+            <span class="pill">📝 Coaching</span>
+            <span class="pill">🔁 Improve</span>
+        </div>
+
+        <!-- CTA Button -->
+        <div class="cta-container">
+            <a href="https://scaruana33-code.github.io/mock-interviews2/"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="cta-button">
+                Enter the Studio →
+            </a>
+        </div>
+
+        <!-- Branding -->
+        <div class="branding">
+            <div class="brand-name">No More Reports on the Run</div>
+            <div class="brand-tagline">Preparation Is Not a Privilege</div>
+        </div>
+
+    </div>
+
+    <!-- Rose Quote — Bottom -->
+    <div class="rose-quote">
+        🌹 "Go practice, sweetheart. I'll be right here." — Coach Rose
+    </div>
+
+    <!-- ============================================
+         JAVASCRIPT — FLOATING PETALS GENERATOR
+         ============================================ -->
+    <script>
+        // ==========================================
+        // GENERATE FLOATING ROSE PETALS
+        // ==========================================
+        function createPetals() {
+            const container = document.getElementById('petals-container');
+            const petalCount = 30;
+
+            for (let i = 0; i < petalCount; i++) {
+                const petal = document.createElement('div');
+                petal.classList.add('petal');
+
+                // Randomize position and timing
+                petal.style.left = Math.random() * 100 + 'vw';
+                petal.style.animationDuration = (Math.random() * 8 + 6) + 's';
+                petal.style.animationDelay = (Math.random() * 10) + 's';
+                petal.style.width = (Math.random() * 8 + 6) + 'px';
+                petal.style.height = petal.style.width;
+                petal.style.opacity = 0;
+
+                container.appendChild(petal);
+            }
+        }
+
+        // ==========================================
+        // TYPEWRITER EFFECT FOR ROSE QUOTE (OPTIONAL)
+        // ==========================================
+        function typewriterQuote() {
+            const quoteEl = document.querySelector('.rose-quote');
+            const fullText = quoteEl.textContent;
+            quoteEl.textContent = '';
+
+            // Wait for the fade-in animation to complete (7.5s delay + 1.2s duration)
+            setTimeout(() => {
+                let i = 0;
+                const speed = 50; // ms per character
+
+                function typeChar() {
+                    if (i < fullText.length) {
+                        quoteEl.textContent += fullText.charAt(i);
+                        i++;
+                        setTimeout(typeChar, speed);
+                    }
+                }
+                typeChar();
+            }, 8700);
+        }
+
+        // ==========================================
+        // SPARKLE CURSOR EFFECT
+        // ==========================================
+        function initSparkles() {
+            document.addEventListener('mousemove', (e) => {
+                if (Math.random() > 0.85) { // Only 15% of moves create sparkle
+                    const sparkle = document.createElement('div');
+                    sparkle.style.cssText = `
+                        position: fixed;
+                        left: ${e.clientX}px;
+                        top: ${e.clientY}px;
+                        width: 4px;
+                        height: 4px;
+                        background: ${Math.random() > 0.5 ? '#E8A0BF' : '#F5D5A0'};
+                        border-radius: 50%;
+                        pointer-events: none;
+                        z-index: 9999;
+                        animation: sparkleOut 0.8s ease-out forwards;
+                    `;
+                    document.body.appendChild(sparkle);
+                    setTimeout(() => sparkle.remove(), 800);
+                }
+            });
+
+            // Add sparkle animation to stylesheet
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes sparkleOut {
+                    0% { opacity: 1; transform: scale(1); }
+                    100% { opacity: 0; transform: scale(0) translateY(-20px); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // ==========================================
+        // INITIALIZE EVERYTHING
+        // ==========================================
+        window.addEventListener('load', () => {
+            createPetals();
+            typewriterQuote();
+            initSparkles();
+        });
+    </script>
+
+</body>
+</html>
