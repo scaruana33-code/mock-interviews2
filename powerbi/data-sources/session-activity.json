@@ -1,0 +1,57 @@
+[
+  {
+    "SessionId": "sess-001",
+    "SessionName": "refresh (41)",
+    "Timestamp": "2026-09-03T10:30:00Z",
+    "ActivityType": "editing",
+    "Duration": 1800,
+    "UserName": "scaruana33",
+    "Repository": "scaruana33-code/mock-interviews2",
+    "Branch": "scaruana33-code-solid-spoon",
+    "Status": "active"
+  },
+  {
+    "SessionId": "sess-002",
+    "SessionName": "code review",
+    "Timestamp": "2026-09-03T09:00:00Z",
+    "ActivityType": "review",
+    "Duration": 3600,
+    "UserName": "scaruana33",
+    "Repository": "scaruana33-code/mock-interviews2",
+    "Branch": "main",
+    "Status": "completed"
+  },
+  {
+    "SessionId": "sess-003",
+    "SessionName": "testing",
+    "Timestamp": "2026-09-02T14:30:00Z",
+    "ActivityType": "testing",
+    "Duration": 2700,
+    "UserName": "scaruana33",
+    "Repository": "scaruana33-code/mock-interviews2",
+    "Branch": "scaruana33-code-solid-spoon",
+    "Status": "completed"
+  },
+  {
+    "SessionId": "sess-004",
+    "SessionName": "debugging",
+    "Timestamp": "2026-09-02T11:00:00Z",
+    "ActivityType": "debugging",
+    "Duration": 5400,
+    "UserName": "scaruana33",
+    "Repository": "scaruana33-code/mock-interviews2",
+    "Branch": "scaruana33-code-solid-spoon",
+    "Status": "completed"
+  },
+  {
+    "SessionId": "sess-005",
+    "SessionName": "documentation",
+    "Timestamp": "2026-09-01T15:45:00Z",
+    "ActivityType": "documentation",
+    "Duration": 2100,
+    "UserName": "scaruana33",
+    "Repository": "scaruana33-code/mock-interviews2",
+    "Branch": "main",
+    "Status": "completed"
+  }
+]

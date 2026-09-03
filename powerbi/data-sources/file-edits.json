@@ -1,0 +1,52 @@
+[
+  {
+    "EditId": "edit-001",
+    "SessionId": "sess-001",
+    "FilePath": "powerbi/dataflows/ActivityDataflow.json",
+    "FileType": "json",
+    "ChangeType": "create",
+    "LinesAdded": 250,
+    "LinesRemoved": 0,
+    "Timestamp": "2026-09-03T10:35:00Z"
+  },
+  {
+    "EditId": "edit-002",
+    "SessionId": "sess-001",
+    "FilePath": "powerbi/README.md",
+    "FileType": "markdown",
+    "ChangeType": "create",
+    "LinesAdded": 45,
+    "LinesRemoved": 0,
+    "Timestamp": "2026-09-03T10:40:00Z"
+  },
+  {
+    "EditId": "edit-003",
+    "SessionId": "sess-003",
+    "FilePath": "README.md",
+    "FileType": "markdown",
+    "ChangeType": "modify",
+    "LinesAdded": 12,
+    "LinesRemoved": 5,
+    "Timestamp": "2026-09-02T14:45:00Z"
+  },
+  {
+    "EditId": "edit-004",
+    "SessionId": "sess-004",
+    "FilePath": "index.html",
+    "FileType": "html",
+    "ChangeType": "modify",
+    "LinesAdded": 30,
+    "LinesRemoved": 15,
+    "Timestamp": "2026-09-02T11:30:00Z"
+  },
+  {
+    "EditId": "edit-005",
+    "SessionId": "sess-005",
+    "FilePath": "docs/API.md",
+    "FileType": "markdown",
+    "ChangeType": "create",
+    "LinesAdded": 120,
+    "LinesRemoved": 0,
+    "Timestamp": "2026-09-01T16:00:00Z"
+  }
+]

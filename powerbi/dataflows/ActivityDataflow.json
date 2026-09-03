@@ -1,0 +1,337 @@
+{
+  "version": "1.0.0",
+  "name": "Activity Dataflow",
+  "description": "Main dataflow for tracking development session activity",
+  "entities": [
+    {
+      "name": "SessionActivity",
+      "displayName": "Session Activity",
+      "description": "Core session activity tracking",
+      "source": {
+        "type": "json",
+        "path": "session-activity.json"
+      },
+      "columns": [
+        {
+          "name": "SessionId",
+          "dataType": "string",
+          "isKey": true
+        },
+        {
+          "name": "SessionName",
+          "dataType": "string"
+        },
+        {
+          "name": "Timestamp",
+          "dataType": "dateTime"
+        },
+        {
+          "name": "ActivityType",
+          "dataType": "string"
+        },
+        {
+          "name": "Duration",
+          "dataType": "integer"
+        },
+        {
+          "name": "UserName",
+          "dataType": "string"
+        },
+        {
+          "name": "Repository",
+          "dataType": "string"
+        },
+        {
+          "name": "Branch",
+          "dataType": "string"
+        },
+        {
+          "name": "Status",
+          "dataType": "string"
+        }
+      ],
+      "transformations": [
+        {
+          "type": "filter",
+          "name": "FilterActiveOnly",
+          "expression": "Status = 'active' or Status = 'completed'"
+        },
+        {
+          "type": "addColumn",
+          "name": "ActivityDate",
+          "expression": "Date.From([Timestamp])"
+        },
+        {
+          "type": "addColumn",
+          "name": "ActivityHour",
+          "expression": "Time.Hour([Timestamp])"
+        }
+      ]
+    },
+    {
+      "name": "FileEdits",
+      "displayName": "File Edits",
+      "description": "Track file modifications during sessions",
+      "source": {
+        "type": "json",
+        "path": "file-edits.json"
+      },
+      "columns": [
+        {
+          "name": "EditId",
+          "dataType": "string",
+          "isKey": true
+        },
+        {
+          "name": "SessionId",
+          "dataType": "string"
+        },
+        {
+          "name": "FilePath",
+          "dataType": "string"
+        },
+        {
+          "name": "FileType",
+          "dataType": "string"
+        },
+        {
+          "name": "ChangeType",
+          "dataType": "string"
+        },
+        {
+          "name": "LinesAdded",
+          "dataType": "integer"
+        },
+        {
+          "name": "LinesRemoved",
+          "dataType": "integer"
+        },
+        {
+          "name": "Timestamp",
+          "dataType": "dateTime"
+        }
+      ],
+      "transformations": [
+        {
+          "type": "addColumn",
+          "name": "NetLinesChanged",
+          "expression": "[LinesAdded] - [LinesRemoved]"
+        },
+        {
+          "type": "groupBy",
+          "name": "FileTypeStats",
+          "groupByColumns": ["FileType"],
+          "aggregations": [
+            {
+              "column": "LinesAdded",
+              "aggregationMethod": "Sum",
+              "newColumnName": "TotalLinesAdded"
+            },
+            {
+              "column": "LinesRemoved",
+              "aggregationMethod": "Sum",
+              "newColumnName": "TotalLinesRemoved"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "GitActivity",
+      "displayName": "Git Activity",
+      "description": "Track commits, branches, and Git operations",
+      "source": {
+        "type": "json",
+        "path": "git-activity.json"
+      },
+      "columns": [
+        {
+          "name": "CommitId",
+          "dataType": "string",
+          "isKey": true
+        },
+        {
+          "name": "CommitMessage",
+          "dataType": "string"
+        },
+        {
+          "name": "AuthorName",
+          "dataType": "string"
+        },
+        {
+          "name": "CommitDate",
+          "dataType": "dateTime"
+        },
+        {
+          "name": "FilesChanged",
+          "dataType": "integer"
+        },
+        {
+          "name": "Insertions",
+          "dataType": "integer"
+        },
+        {
+          "name": "Deletions",
+          "dataType": "integer"
+        },
+        {
+          "name": "Branch",
+          "dataType": "string"
+        }
+      ],
+      "transformations": [
+        {
+          "type": "addColumn",
+          "name": "CommitDay",
+          "expression": "Date.From([CommitDate])"
+        },
+        {
+          "type": "addColumn",
+          "name": "CommitWeek",
+          "expression": "Date.WeekOfYear([CommitDate])"
+        }
+      ]
+    },
+    {
+      "name": "TaskActivity",
+      "displayName": "Task Activity",
+      "description": "Track task completion and progress",
+      "source": {
+        "type": "json",
+        "path": "task-activity.json"
+      },
+      "columns": [
+        {
+          "name": "TaskId",
+          "dataType": "string",
+          "isKey": true
+        },
+        {
+          "name": "TaskTitle",
+          "dataType": "string"
+        },
+        {
+          "name": "Status",
+          "dataType": "string"
+        },
+        {
+          "name": "CreatedDate",
+          "dataType": "dateTime"
+        },
+        {
+          "name": "CompletedDate",
+          "dataType": "dateTime"
+        },
+        {
+          "name": "TimeToComplete",
+          "dataType": "integer"
+        },
+        {
+          "name": "Priority",
+          "dataType": "string"
+        },
+        {
+          "name": "Category",
+          "dataType": "string"
+        }
+      ],
+      "transformations": [
+        {
+          "type": "filter",
+          "name": "OnlyCompletedTasks",
+          "expression": "Status = 'done'"
+        },
+        {
+          "type": "addColumn",
+          "name": "IsOverdue",
+          "expression": "[TimeToComplete] > 28800"
+        }
+      ]
+    },
+    {
+      "name": "ToolExecutions",
+      "displayName": "Tool Executions",
+      "description": "Track tool and command executions",
+      "source": {
+        "type": "json",
+        "path": "tool-executions.json"
+      },
+      "columns": [
+        {
+          "name": "ExecutionId",
+          "dataType": "string",
+          "isKey": true
+        },
+        {
+          "name": "SessionId",
+          "dataType": "string"
+        },
+        {
+          "name": "ToolName",
+          "dataType": "string"
+        },
+        {
+          "name": "ExecutionTime",
+          "dataType": "integer"
+        },
+        {
+          "name": "Success",
+          "dataType": "boolean"
+        },
+        {
+          "name": "ExecutedAt",
+          "dataType": "dateTime"
+        },
+        {
+          "name": "ToolType",
+          "dataType": "string"
+        }
+      ],
+      "transformations": [
+        {
+          "type": "addColumn",
+          "name": "ExecutionStatus",
+          "expression": "if [Success] then \"Success\" else \"Failed\""
+        },
+        {
+          "type": "groupBy",
+          "name": "ToolStats",
+          "groupByColumns": ["ToolName"],
+          "aggregations": [
+            {
+              "column": "ExecutionTime",
+              "aggregationMethod": "Average",
+              "newColumnName": "AvgExecutionTime"
+            },
+            {
+              "column": "Success",
+              "aggregationMethod": "Count",
+              "newColumnName": "SuccessCount"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntity": "SessionActivity",
+      "fromColumn": "SessionId",
+      "toEntity": "FileEdits",
+      "toColumn": "SessionId",
+      "cardinality": "OneToMany"
+    },
+    {
+      "fromEntity": "SessionActivity",
+      "fromColumn": "SessionId",
+      "toEntity": "ToolExecutions",
+      "toColumn": "SessionId",
+      "cardinality": "OneToMany"
+    }
+  ],
+  "refreshSchedule": {
+    "frequency": "Hourly",
+    "interval": 1,
+    "startTime": "08:00:00"
+  }
+}
