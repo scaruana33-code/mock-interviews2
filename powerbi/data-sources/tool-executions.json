@@ -1,0 +1,56 @@
+[
+  {
+    "ExecutionId": "exec-001",
+    "SessionId": "sess-001",
+    "ToolName": "view",
+    "ExecutionTime": 150,
+    "Success": true,
+    "ExecutedAt": "2026-09-03T10:30:15Z",
+    "ToolType": "file-operation"
+  },
+  {
+    "ExecutionId": "exec-002",
+    "SessionId": "sess-001",
+    "ToolName": "create",
+    "ExecutionTime": 200,
+    "Success": true,
+    "ExecutedAt": "2026-09-03T10:35:30Z",
+    "ToolType": "file-operation"
+  },
+  {
+    "ExecutionId": "exec-003",
+    "SessionId": "sess-003",
+    "ToolName": "grep",
+    "ExecutionTime": 320,
+    "Success": true,
+    "ExecutedAt": "2026-09-02T14:35:45Z",
+    "ToolType": "search"
+  },
+  {
+    "ExecutionId": "exec-004",
+    "SessionId": "sess-004",
+    "ToolName": "powershell",
+    "ExecutionTime": 850,
+    "Success": true,
+    "ExecutedAt": "2026-09-02T11:15:20Z",
+    "ToolType": "command"
+  },
+  {
+    "ExecutionId": "exec-005",
+    "SessionId": "sess-004",
+    "ToolName": "git",
+    "ExecutionTime": 450,
+    "Success": false,
+    "ExecutedAt": "2026-09-02T11:45:00Z",
+    "ToolType": "vcs"
+  },
+  {
+    "ExecutionId": "exec-006",
+    "SessionId": "sess-005",
+    "ToolName": "edit",
+    "ExecutionTime": 180,
+    "Success": true,
+    "ExecutedAt": "2026-09-01T16:05:10Z",
+    "ToolType": "file-operation"
+  }
+]

@@ -1,0 +1,251 @@
+{
+  "version": "1.1.0",
+  "name": "Activity Tracking Model",
+  "description": "Semantic model for activity tracking with measures and DAX calculations",
+  "tables": [
+    {
+      "name": "SessionActivity",
+      "columns": [
+        {"name": "SessionId", "dataType": "String"},
+        {"name": "SessionName", "dataType": "String"},
+        {"name": "Timestamp", "dataType": "DateTime"},
+        {"name": "ActivityType", "dataType": "String"},
+        {"name": "Duration", "dataType": "Integer"},
+        {"name": "UserName", "dataType": "String"},
+        {"name": "Repository", "dataType": "String"},
+        {"name": "Branch", "dataType": "String"},
+        {"name": "Status", "dataType": "String"},
+        {"name": "ActivityDate", "dataType": "Date"},
+        {"name": "ActivityHour", "dataType": "Integer"}
+      ],
+      "measures": [
+        {
+          "name": "Total Sessions",
+          "expression": "COUNTA(SessionActivity[SessionId])"
+        },
+        {
+          "name": "Active Sessions",
+          "expression": "CALCULATE(COUNTA(SessionActivity[SessionId]), SessionActivity[Status]=\"active\")"
+        },
+        {
+          "name": "Completed Sessions",
+          "expression": "CALCULATE(COUNTA(SessionActivity[SessionId]), SessionActivity[Status]=\"completed\")"
+        },
+        {
+          "name": "Avg Session Duration (minutes)",
+          "expression": "AVERAGE(SessionActivity[Duration])/60"
+        },
+        {
+          "name": "Total Session Time (hours)",
+          "expression": "SUM(SessionActivity[Duration])/3600"
+        },
+        {
+          "name": "Session Completion Rate",
+          "expression": "DIVIDE([Completed Sessions], [Total Sessions], 0)"
+        }
+      ]
+    },
+    {
+      "name": "FileEdits",
+      "columns": [
+        {"name": "EditId", "dataType": "String"},
+        {"name": "SessionId", "dataType": "String"},
+        {"name": "FilePath", "dataType": "String"},
+        {"name": "FileType", "dataType": "String"},
+        {"name": "ChangeType", "dataType": "String"},
+        {"name": "LinesAdded", "dataType": "Integer"},
+        {"name": "LinesRemoved", "dataType": "Integer"},
+        {"name": "Timestamp", "dataType": "DateTime"},
+        {"name": "NetLinesChanged", "dataType": "Integer"}
+      ],
+      "measures": [
+        {
+          "name": "Total Edits",
+          "expression": "COUNTA(FileEdits[EditId])"
+        },
+        {
+          "name": "Total Lines Added",
+          "expression": "SUM(FileEdits[LinesAdded])"
+        },
+        {
+          "name": "Total Lines Removed",
+          "expression": "SUM(FileEdits[LinesRemoved])"
+        },
+        {
+          "name": "Net Lines Changed",
+          "expression": "SUM(FileEdits[NetLinesChanged])"
+        },
+        {
+          "name": "Avg Lines Per Edit",
+          "expression": "DIVIDE([Total Lines Added] + [Total Lines Removed], [Total Edits], 0)"
+        },
+        {
+          "name": "Total Files Modified",
+          "expression": "DISTINCTCOUNT(FileEdits[FilePath])"
+        }
+      ]
+    },
+    {
+      "name": "GitActivity",
+      "columns": [
+        {"name": "CommitId", "dataType": "String"},
+        {"name": "CommitMessage", "dataType": "String"},
+        {"name": "AuthorName", "dataType": "String"},
+        {"name": "CommitDate", "dataType": "DateTime"},
+        {"name": "FilesChanged", "dataType": "Integer"},
+        {"name": "Insertions", "dataType": "Integer"},
+        {"name": "Deletions", "dataType": "Integer"},
+        {"name": "Branch", "dataType": "String"},
+        {"name": "CommitDay", "dataType": "Date"},
+        {"name": "CommitWeek", "dataType": "Integer"}
+      ],
+      "measures": [
+        {
+          "name": "Total Commits",
+          "expression": "COUNTA(GitActivity[CommitId])"
+        },
+        {
+          "name": "Avg Files Per Commit",
+          "expression": "AVERAGE(GitActivity[FilesChanged])"
+        },
+        {
+          "name": "Total Code Insertions",
+          "expression": "SUM(GitActivity[Insertions])"
+        },
+        {
+          "name": "Total Code Deletions",
+          "expression": "SUM(GitActivity[Deletions])"
+        },
+        {
+          "name": "Code Churn",
+          "expression": "[Total Code Insertions] + [Total Code Deletions]"
+        },
+        {
+          "name": "Commits Per Day",
+          "expression": "DIVIDE([Total Commits], DISTINCTCOUNT(GitActivity[CommitDay]), 0)"
+        }
+      ]
+    },
+    {
+      "name": "TaskActivity",
+      "columns": [
+        {"name": "TaskId", "dataType": "String"},
+        {"name": "TaskTitle", "dataType": "String"},
+        {"name": "Status", "dataType": "String"},
+        {"name": "CreatedDate", "dataType": "DateTime"},
+        {"name": "CompletedDate", "dataType": "DateTime"},
+        {"name": "TimeToComplete", "dataType": "Integer"},
+        {"name": "Priority", "dataType": "String"},
+        {"name": "Category", "dataType": "String"},
+        {"name": "IsOverdue", "dataType": "Boolean"}
+      ],
+      "measures": [
+        {
+          "name": "Total Tasks",
+          "expression": "COUNTA(TaskActivity[TaskId])"
+        },
+        {
+          "name": "Completed Tasks",
+          "expression": "CALCULATE(COUNTA(TaskActivity[TaskId]), TaskActivity[Status]=\"done\")"
+        },
+        {
+          "name": "Pending Tasks",
+          "expression": "CALCULATE(COUNTA(TaskActivity[TaskId]), TaskActivity[Status]=\"pending\")"
+        },
+        {
+          "name": "In Progress Tasks",
+          "expression": "CALCULATE(COUNTA(TaskActivity[TaskId]), TaskActivity[Status]=\"in_progress\")"
+        },
+        {
+          "name": "Task Completion Rate",
+          "expression": "DIVIDE([Completed Tasks], [Total Tasks], 0)"
+        },
+        {
+          "name": "Overdue Tasks",
+          "expression": "CALCULATE(COUNTA(TaskActivity[TaskId]), TaskActivity[IsOverdue]=TRUE())"
+        },
+        {
+          "name": "Avg Time To Complete (hours)",
+          "expression": "CALCULATE(AVERAGE(TaskActivity[TimeToComplete])/3600, TaskActivity[Status]=\"done\")"
+        }
+      ]
+    },
+    {
+      "name": "ToolExecutions",
+      "columns": [
+        {"name": "ExecutionId", "dataType": "String"},
+        {"name": "SessionId", "dataType": "String"},
+        {"name": "ToolName", "dataType": "String"},
+        {"name": "ExecutionTime", "dataType": "Integer"},
+        {"name": "Success", "dataType": "Boolean"},
+        {"name": "ExecutedAt", "dataType": "DateTime"},
+        {"name": "ToolType", "dataType": "String"},
+        {"name": "ExecutionStatus", "dataType": "String"}
+      ],
+      "measures": [
+        {
+          "name": "Total Tool Executions",
+          "expression": "COUNTA(ToolExecutions[ExecutionId])"
+        },
+        {
+          "name": "Successful Executions",
+          "expression": "CALCULATE(COUNTA(ToolExecutions[ExecutionId]), ToolExecutions[Success]=TRUE())"
+        },
+        {
+          "name": "Failed Executions",
+          "expression": "CALCULATE(COUNTA(ToolExecutions[ExecutionId]), ToolExecutions[Success]=FALSE())"
+        },
+        {
+          "name": "Execution Success Rate",
+          "expression": "DIVIDE([Successful Executions], [Total Tool Executions], 0)"
+        },
+        {
+          "name": "Avg Execution Time (ms)",
+          "expression": "AVERAGE(ToolExecutions[ExecutionTime])"
+        },
+        {
+          "name": "Total Execution Time (minutes)",
+          "expression": "SUM(ToolExecutions[ExecutionTime])/60000"
+        },
+        {
+          "name": "Most Used Tool",
+          "expression": "MAXX(TOPN(1, VALUES(ToolExecutions[ToolName]), COUNTA(ToolExecutions[ExecutionId])), ToolExecutions[ToolName])"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "fromTable": "SessionActivity",
+      "fromColumn": "SessionId",
+      "toTable": "FileEdits",
+      "toColumn": "SessionId",
+      "type": "OneToMany"
+    },
+    {
+      "fromTable": "SessionActivity",
+      "fromColumn": "SessionId",
+      "toTable": "ToolExecutions",
+      "toColumn": "SessionId",
+      "type": "OneToMany"
+    }
+  ],
+  "displayFolders": [
+    {
+      "folder": "Session Metrics",
+      "tables": ["SessionActivity"]
+    },
+    {
+      "folder": "Development Activity",
+      "tables": ["FileEdits", "GitActivity"]
+    },
+    {
+      "folder": "Task Management",
+      "tables": ["TaskActivity"]
+    },
+    {
+      "folder": "Tool Performance",
+      "tables": ["ToolExecutions"]
+    }
+  ]
+}

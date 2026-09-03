@@ -1,0 +1,52 @@
+[
+  {
+    "TaskId": "task-001",
+    "TaskTitle": "Create Power BI dataflows",
+    "Status": "done",
+    "CreatedDate": "2026-09-03T08:00:00Z",
+    "CompletedDate": "2026-09-03T10:45:00Z",
+    "TimeToComplete": 9900,
+    "Priority": "high",
+    "Category": "analytics"
+  },
+  {
+    "TaskId": "task-002",
+    "TaskTitle": "Set up data sources",
+    "Status": "done",
+    "CreatedDate": "2026-09-02T13:00:00Z",
+    "CompletedDate": "2026-09-02T16:30:00Z",
+    "TimeToComplete": 12600,
+    "Priority": "high",
+    "Category": "infrastructure"
+  },
+  {
+    "TaskId": "task-003",
+    "TaskTitle": "Configure refresh schedules",
+    "Status": "done",
+    "CreatedDate": "2026-09-01T09:00:00Z",
+    "CompletedDate": "2026-09-01T17:00:00Z",
+    "TimeToComplete": 28800,
+    "Priority": "medium",
+    "Category": "infrastructure"
+  },
+  {
+    "TaskId": "task-004",
+    "TaskTitle": "Build dashboard reports",
+    "Status": "in_progress",
+    "CreatedDate": "2026-09-03T08:30:00Z",
+    "CompletedDate": null,
+    "TimeToComplete": null,
+    "Priority": "high",
+    "Category": "reporting"
+  },
+  {
+    "TaskId": "task-005",
+    "TaskTitle": "Document dataflow architecture",
+    "Status": "pending",
+    "CreatedDate": "2026-09-03T10:00:00Z",
+    "CompletedDate": null,
+    "TimeToComplete": null,
+    "Priority": "medium",
+    "Category": "documentation"
+  }
+]
