@@ -7,6 +7,7 @@ Everything is stored **locally in your browser** (localStorage) — nothing is u
 | File | Purpose |
 |------|---------|
 | `index.html` | The entire app. This is the only file that actually matters. |
+| `coach/index.html` | Coach Rose Job Coach: profile, résumé check, job fit cards, application odds, debrief refresh and learning loop. Live at `/coach/`; shares browser storage with the Studio. |
 | `staticwebapp.config.json` | Config for **Azure Static Web Apps** (sets microphone permission + 
 routing). |
 | `netlify.toml` | Config for **Netlify** (sets microphone permission). |

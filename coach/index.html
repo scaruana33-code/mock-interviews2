@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coach Rose Job Coach</title>
+<meta name="description" content="Coach Rose Nylund's Job Coach: profile, résumé check, job fit, application odds, debrief refresh and learning loop. Runs in your browser.">
+<style>
+:root{
+  --bg:#faf7f8; --card:#ffffff; --ink:#2a1f24; --quiet:#6f5c65; --line:#ead9e0;
+  --rose:#b0416b; --rose-soft:#f7e6ed; --good:#2f7d4f; --warn:#a86a12; --bad:#b23a3a;
+  --bar:#efe3e8; --input:#fff;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#17121a; --card:#221a25; --ink:#f3e9ee; --quiet:#b9a5ae; --line:#3a2c38;
+    --rose:#e27aa1; --rose-soft:#3a2230; --good:#6cc38f; --warn:#e2a54b; --bad:#ef7d7d;
+    --bar:#33263a; --input:#1b141e;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#17121a; --card:#221a25; --ink:#f3e9ee; --quiet:#b9a5ae; --line:#3a2c38;
+  --rose:#e27aa1; --rose-soft:#3a2230; --good:#6cc38f; --warn:#e2a54b; --bad:#ef7d7d;
+  --bar:#33263a; --input:#1b141e;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:14px 16px}
+.hwrap{max-width:1040px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:18px}
+.brand span{color:var(--rose)}
+.sub{color:var(--quiet);font-size:13px}
+.hlinks{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+nav{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.nwrap{max-width:1040px;margin:0 auto;display:flex;overflow-x:auto;padding:0 8px}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:11px 12px;font:inherit;font-weight:600;color:var(--quiet);cursor:pointer;white-space:nowrap}
+nav button.on{color:var(--rose);border-bottom-color:var(--rose)}
+main{max-width:1040px;margin:0 auto;padding:16px}
+section{display:none}
+section.on{display:block}
+h2{font-size:20px;margin:4px 0 4px}
+h3{font-size:16px;margin:0 0 6px}
+p.lead{color:var(--quiet);margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:4px}
+label .hint{font-weight:400;color:var(--quiet)}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--input);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+textarea{min-height:120px;resize:vertical}
+input[type=checkbox]{width:auto}
+.btn{display:inline-block;background:var(--rose);color:#fff;border:0;border-radius:8px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--rose);border:1px solid var(--rose)}
+.btn.small{padding:5px 10px;font-size:13px}
+.btn.danger{background:transparent;color:var(--bad);border:1px solid var(--bad)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.muted{color:var(--quiet);font-size:13px}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;background:var(--rose-soft);color:var(--rose);font-size:12px;font-weight:600}
+.big{font-size:30px;font-weight:700;line-height:1}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:10px 0}
+.kpi{border:1px solid var(--line);border-radius:10px;padding:10px}
+.kpi .v{font-size:22px;font-weight:700}
+.kpi .l{font-size:12px;color:var(--quiet)}
+.bar{height:8px;background:var(--bar);border-radius:99px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--rose);border-radius:99px}
+.brow{display:grid;grid-template-columns:150px 1fr 52px;gap:8px;align-items:center;font-size:13px;margin:4px 0}
+.brow b{text-align:right}
+.chips span{display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border-radius:6px;font-size:12px;border:1px solid var(--line)}
+.chips .miss{border-color:var(--warn);color:var(--warn)}
+.chips .hit{border-color:var(--good);color:var(--good)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--quiet);font-weight:600}
+.tablewrap{overflow-x:auto}
+.note{background:var(--rose-soft);border-radius:10px;padding:10px 12px;font-size:13px;margin:10px 0}
+.up{color:var(--good);font-weight:600}
+.down{color:var(--bad);font-weight:600}
+.signals{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 16px;margin:8px 0}
+.signals label{font-weight:400;display:flex;gap:8px;align-items:flex-start;margin:0}
+.empty{color:var(--quiet);text-align:center;padding:24px}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);max-width:720px;width:calc(100% - 32px);padding:18px}
+dialog::backdrop{background:rgba(20,10,15,.45)}
+pre.prompt{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:12px;max-height:220px;overflow:auto}
+footer{max-width:1040px;margin:0 auto;padding:8px 16px 32px;color:var(--quiet);font-size:12px}
+@media (max-width:560px){ .brow{grid-template-columns:110px 1fr 44px} .big{font-size:26px} }
+</style>
+</head>
+<body>
+<header>
+  <div class="hwrap">
+    <div>
+      <div class="brand">Coach <span>Rose Nylund's</span> Job Coach</div>
+      <div class="sub">Profile · résumé · job fit · odds at every stage · debrief refresh · learning loop</div>
+    </div>
+    <div class="hlinks">
+      <a class="btn ghost small" href="../">🎙️ Interview Studio</a>
+      <button class="btn ghost small" id="themeBtn" type="button">🌓 Theme</button>
+    </div>
+  </div>
+</header>
+<nav><div class="nwrap" id="tabs">
+  <button data-t="profile" class="on">1 · Profile</button>
+  <button data-t="resume">2 · Résumé</button>
+  <button data-t="jobs">3 · Job fit</button>
+  <button data-t="apps">4 · Applications &amp; odds</button>
+  <button data-t="practice">5 · Practice</button>
+  <button data-t="insights">6 · Learning loop</button>
+  <button data-t="data">Data</button>
+</div></nav>
+
+<main>
+<!-- ============ PROFILE ============ -->
+<section id="s-profile" class="on">
+  <h2>Smart Intake</h2>
+  <p class="lead">Tell Rose what you're looking for. These matching factors drive every score in the app. Age, race, gender and disability are never asked for and never used.</p>
+  <div class="card">
+    <div class="grid2">
+      <div><label>Full name</label><input id="p_fullName"></div>
+      <div><label>Target role</label><input id="p_targetRole" placeholder="e.g. Program Manager, Vendor Management"></div>
+      <div><label>Industry</label><input id="p_industry" placeholder="e.g. Insurance, HR tech"></div>
+      <div><label>Home location</label><input id="p_location" placeholder="e.g. Brooklyn, NY"></div>
+      <div><label>Location mobility</label><select id="p_mobility">
+        <option value="remote">Remote only</option><option value="hybrid">Hybrid or remote</option>
+        <option value="onsite">On-site OK (local)</option><option value="relocate">Willing to relocate</option></select></div>
+      <div><label>Minimum base salary <span class="hint">(USD / year)</span></label><input id="p_salaryMin" type="number" min="0" step="1000"></div>
+      <div><label>Years of relevant experience</label><input id="p_experienceYears" type="number" min="0" max="60"></div>
+      <div><label>Highest education</label><select id="p_education">
+        <option value="0">High school / none</option><option value="1">Associate</option><option value="2">Bachelor's</option>
+        <option value="3">Master's</option><option value="4">Doctorate</option></select></div>
+      <div><label>Work style <span class="hint">(e.g. your RIASEC code)</span></label><input id="p_workStyle" placeholder="e.g. Enterprising-Conventional"></div>
+      <div><label>Preferred interview format</label><input id="p_interviewFormat" placeholder="e.g. Video, panel OK"></div>
+    </div>
+    <div style="margin-top:12px"><label>Key skills <span class="hint">(comma separated)</span></label><input id="p_skills" placeholder="e.g. Beeline, SAP Fieldglass, SQL, Power BI, vendor management"></div>
+    <div class="grid2" style="margin-top:12px">
+      <div><label>Deal-breakers</label><input id="p_dealBreakers" placeholder="e.g. no travel over 25%"></div>
+      <div><label>Schedule constraints</label><input id="p_schedule" placeholder="e.g. no Friday interviews"></div>
+    </div>
+    <div style="margin-top:12px"><label>Background summary for interview prep <span class="hint">(3–6 short lines; used in the Studio prompt instead of a hardcoded bio)</span></label>
+      <textarea id="p_background" placeholder="- 15+ years running VMS and MSP programs&#10;- Owned SLA governance and supplier scorecards&#10;- Tools: SQL, Power BI, Alteryx"></textarea></div>
+    <div class="row" style="margin-top:12px"><button class="btn" id="saveProfile" type="button">Save profile</button><span class="muted" id="profileMsg"></span></div>
+  </div>
+</section>
+
+<!-- ============ RESUME ============ -->
+<section id="s-resume">
+  <h2>Résumé Intelligence</h2>
+  <p class="lead">Paste your résumé and a job description. Rose checks keyword coverage and formatting the way an ATS would, right here in your browser.</p>
+  <div class="card">
+    <div class="grid2">
+      <div><label>Your résumé <span class="hint">(plain text)</span></label><textarea id="r_text" style="min-height:220px"></textarea></div>
+      <div><label>Job description</label>
+        <select id="r_job" style="margin-bottom:6px"><option value="">Paste a JD below, or pick a saved job…</option></select>
+        <textarea id="r_jd" style="min-height:182px"></textarea></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="runResume" type="button">Check my résumé</button>
+      <button class="btn ghost" id="copyRosey" type="button">📋 Copy prompt for a deeper Copilot review</button>
+      <span class="muted" id="resumeMsg"></span>
+    </div>
+  </div>
+  <div id="resumeReport"></div>
+</section>
+
+<!-- ============ JOBS ============ -->
+<section id="s-jobs">
+  <h2>Job Match Engine</h2>
+  <p class="lead">Add jobs you're considering. Each gets a Job Fit Card scored with the plan's weights: skills 30%, experience 20%, education, location, salary, culture and trajectory 10% each.</p>
+  <div class="card">
+    <h3 id="jobFormTitle">Add a job</h3>
+    <input type="hidden" id="j_id">
+    <div class="grid2">
+      <div><label>Company</label><input id="j_company"></div>
+      <div><label>Job title</label><input id="j_title"></div>
+      <div><label>Location <span class="hint">(include "remote" if it is)</span></label><input id="j_location"></div>
+      <div><label>Salary <span class="hint">(as posted, e.g. 120,000–140,000)</span></label><input id="j_salary"></div>
+      <div><label>Source <span class="hint">(LinkedIn, Indeed, USAJOBS…)</span></label><input id="j_source"></div>
+      <div><label>Posting URL</label><input id="j_url" type="url"></div>
+      <div><label>Culture fit, your read <span class="hint">(1–5)</span></label><input id="j_culture" type="range" min="1" max="5" value="3"></div>
+      <div><label>Career trajectory, your read <span class="hint">(1–5)</span></label><input id="j_trajectory" type="range" min="1" max="5" value="3"></div>
+    </div>
+    <div style="margin-top:10px"><label>Job description</label><textarea id="j_jd"></textarea></div>
+    <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:8px"><input type="checkbox" id="j_referral"> I have a referral for this role</label>
+    <div class="row" style="margin-top:10px"><button class="btn" id="saveJob" type="button">Save job</button><button class="btn ghost" id="clearJob" type="button">Clear</button></div>
+  </div>
+  <div id="jobList"></div>
+</section>
+
+<!-- ============ APPLICATIONS ============ -->
+<section id="s-apps">
+  <h2>Prediction Engine &amp; Post-Interview Refresh</h2>
+  <p class="lead">Track each application through its stages. Rose estimates the odds of clearing each next gate, then updates them after every debrief.</p>
+  <div class="note"><b>How the odds work:</b> they start from public hiring-funnel rates (about 75% of résumés filtered by ATS; roughly 3% of applicants reach an interview), then adjust for your fit score, referral, practice scores and debrief signals. The adjustments are hand-set estimates until your own outcomes recalibrate them in the Learning loop tab. They are not a guarantee.</div>
+  <div id="appList"></div>
+</section>
+
+<!-- ============ PRACTICE ============ -->
+<section id="s-practice">
+  <h2>Interview Prep &amp; Studio</h2>
+  <p class="lead">Build a question bank for any job and send it straight to the Interview Studio. Practice scores from the Studio flow back into your odds.</p>
+  <div class="card">
+    <h3>Build a question bank for a job</h3>
+    <div class="row"><select id="pr_job" style="max-width:420px"><option value="">Pick a saved job…</option></select></div>
+    <div id="pr_flow" style="display:none;margin-top:10px">
+      <ol class="muted" style="padding-left:18px;margin:0 0 8px">
+        <li>Copy the prompt and paste it into your Microsoft 365 Copilot (or any chat assistant).</li>
+        <li>Paste the JSON it returns below, then press <b>Send to Studio</b>.</li>
+      </ol>
+      <pre class="prompt" id="pr_prompt"></pre>
+      <div class="row" style="margin:8px 0"><button class="btn ghost small" id="pr_copy" type="button">📋 Copy prompt</button></div>
+      <textarea id="pr_json" placeholder='[{"type":"Warmup","lp":"Intro","q":"…"}]'></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn" id="pr_send" type="button">Send to Studio</button><span class="muted" id="pr_msg"></span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Practice so far <span class="muted">(read from the Studio on this device)</span></h3>
+    <div id="studioStats"></div>
+  </div>
+</section>
+
+<!-- ============ INSIGHTS ============ -->
+<section id="s-insights">
+  <h2>Learning Loop</h2>
+  <p class="lead">Every time an application moves forward or ends, Rose logs the odds she showed you against what happened. That is how the estimates get honest.</p>
+  <div id="insights"></div>
+</section>
+
+<!-- ============ DATA ============ -->
+<section id="s-data">
+  <h2>Your data</h2>
+  <p class="lead">Everything lives in this browser only. Nothing is uploaded. Back it up, move it to another device, or clear it.</p>
+  <div class="card">
+    <div class="row">
+      <button class="btn" id="exportData" type="button">💾 Download backup (JSON)</button>
+      <label class="btn ghost" style="margin:0">📂 Restore from backup<input type="file" id="importData" accept="application/json,.json" style="display:none"></label>
+      <button class="btn danger" id="resetData" type="button">Clear all Job Coach data</button>
+    </div>
+    <p class="muted" id="dataMsg" style="margin-top:10px">The backup uses schemaVersion 1 records: profile, résumé, jobs (each with its applications stage, debriefs and Studio link) and the prediction log. Studio practice data stays in the Studio's own backup.</p>
+  </div>
+</section>
+</main>
+
+<dialog id="debriefDlg">
+  <h3 id="dbTitle">Post-interview debrief</h3>
+  <p class="muted" id="dbSub"></p>
+  <div><label>Which round did you just have?</label><select id="dbRound"></select></div>
+  <div class="signals" id="dbSignals"></div>
+  <div><label>Notes <span class="hint">(optional)</span></label><textarea id="dbNotes" style="min-height:70px"></textarea></div>
+  <p class="muted">Only describe what happened in the interview. Never record anything about the interviewer's or your own age, race, gender, disability or other protected traits.</p>
+  <div class="row"><button class="btn" id="dbSave" type="button">Update my odds</button><button class="btn ghost" id="dbCancel" type="button">Cancel</button></div>
+</dialog>
+
+<footer>
+  Informational only; not legal, financial or professional advice, and no guarantee of employment. "Rose Nylund" is a fictional AI persona, not affiliated with or endorsed by any person, estate, studio or media property. Odds are estimates. · No More Reports on the Run
+</footer>
+
+<script>
+"use strict";
+/* ================= STORAGE ================= */
+const KEY="jobcoach_v1";
+const STUDIO_CKEY="rose_companies_v2", STUDIO_SKEY="rose_store_";
+const STUDIO_BUILTIN={amazon:"Amazon",mindlance:"Mindlance",hartford:"The Hartford",nmrotr:"No More Reports on the Run"};
+function blank(){ return {schemaVersion:1,profile:{},resume:{text:""},jobs:[],predLog:[]}; }
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ return false; } }
+let S=(()=>{ try{ const d=JSON.parse(lsGet(KEY)||"null"); if(d&&d.schemaVersion===1) return Object.assign(blank(),d); }catch(e){} return blank(); })();
+function save(){ if(!lsSet(KEY,JSON.stringify(S))) toast("Couldn't save: browser storage is blocked or full."); }
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct=x=>Math.round(x*100)+"%";
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function toast(m){ const el=$("#profileMsg"); if(el) el.textContent=m; }
+
+/* ================= THEME & TABS ================= */
+(()=>{ const t=lsGet("jobcoach_theme"); if(t) document.documentElement.dataset.theme=t; })();
+$("#themeBtn").onclick=()=>{
+  const cur=document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
+  const nx=cur==="dark"?"light":"dark"; document.documentElement.dataset.theme=nx; lsSet("jobcoach_theme",nx);
+};
+function showTab(t){
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+  document.querySelectorAll("main section").forEach(s=>s.classList.toggle("on",s.id==="s-"+t));
+  lsSet("jobcoach_tab",t); renderAll();
+}
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.t));
+
+/* ================= TEXT ANALYSIS ================= */
+const STOP=new Set(("a about above across after again against all also am an and any are as at be because been before being below between both but by can could did do does doing down during each either etc few for from further had has have having he her here hers how i if in into is it its itself just least less like make many may me more most must my no nor not now of off on once only or other our ours out over own per plus same she should so some such than that the their them then there these they this those through to too under until up upon very via was we were what when where which while who whom why will with within without would you your yours "+
+"ability able across activities additional all applicant applicants apply benefits best candidate candidates company opportunity opportunities position positions role roles responsibilities responsible requirements required require requires preferred qualifications qualified including include includes job jobs team teams work working works year years experience experienced strong excellent knowledge skills skill understanding demonstrated proven ensure support supports supporting provide provides providing related relevant various new well within duties key level levels environment equal employer status status, us using use used day days time based must-have nice etc. who what our you'll we're we'll you're also highly plus across ideal minimum degree bachelor bachelor's master master's hiring hire hires looking seeking join joining run runs running own owns help helps across team-oriented fast-paced self-starter").split(/\s+/));
+const SHORT_OK=new Set(["sql","aws","gcp","bi","ai","ml","ux","ui","hr","it","qa","r","c#","c++","go","vms","msp","sow","kpi","kpis","sla","slas","erp","crm","ats","etl","api","apis","pmp","rpa","nlp","seo","hris","hcm","sap"]);
+function tokens(t){ return (String(t||"").toLowerCase().match(/[a-z0-9][a-z0-9+#.\-']*/g)||[]).map(w=>w.replace(/[.\-']+$/,"")); }
+function keywords(jd,max){
+  const toks=tokens(jd), freq=new Map(), first=new Map();
+  toks.forEach((w,i)=>{ if(STOP.has(w)||/^\d+$/.test(w)) return; if(w.length<3&&!SHORT_OK.has(w)) return; freq.set(w,(freq.get(w)||0)+1); if(!first.has(w)) first.set(w,i); });
+  const bi=new Map();
+  for(let i=0;i<toks.length-1;i++){ const a=toks[i],b=toks[i+1]; if(STOP.has(a)||STOP.has(b)||a.length<2||b.length<2||/^\d+$/.test(a)||/^\d+$/.test(b)) continue; const k=a+" "+b; bi.set(k,(bi.get(k)||0)+1); }
+  const bis=[...bi.entries()].filter(([,n])=>n>=2).sort((x,y)=>y[1]-x[1]).slice(0,8).map(([k])=>k);
+  const unis=[...freq.entries()].sort((x,y)=>(y[1]-x[1])||(first.get(x[0])-first.get(y[0]))).map(([k])=>k)
+    .filter(u=>!bis.some(b=>b.split(" ").includes(u)&&freq.get(u)<=2));
+  const seen=new Set(), out=[];
+  bis.concat(unis).forEach(k=>{ const st=tokens(k).map(stem).join(" "); if(!seen.has(st)){ seen.add(st); out.push(k); } });
+  return out.slice(0,max||25);
+}
+function stem(w){ if(w.length<5) return w; w=w.replace(/(ments|ment|ings|ing|ers|er|ed|es|s)$/,""); return w.length>4?w.replace(/e$/,""):w; }
+function hasTerm(text,term){
+  const t=" "+tokens(text).map(stem).join(" ")+" ";
+  return t.includes(" "+tokens(term).map(stem).join(" ")+" ");
+}
+function coverage(resumeText,jd){
+  const kws=keywords(jd,25); if(!kws.length) return {score:null,hit:[],miss:[]};
+  const hit=[],miss=[]; kws.forEach(k=>(hasTerm(resumeText,k)?hit:miss).push(k));
+  return {score:hit.length/kws.length,hit,miss};
+}
+function formatChecks(t){
+  const words=tokens(t).length, lines=String(t).split(/\n/).filter(l=>l.trim());
+  const bullets=lines.filter(l=>/^\s*([-•*▪●]|\d+\.)\s/.test(l)).length;
+  const metrics=(String(t).match(/(\d+(\.\d+)?\s?%|\$\s?\d|\b\d{2,}[,\d]*\b)/g)||[]).length;
+  const checks=[
+    {ok:/[\w.+-]+@[\w-]+\.[\w.]+/.test(t), l:"Email address present"},
+    {ok:/(\+?\d[\d\s().-]{8,}\d)/.test(t), l:"Phone number present"},
+    {ok:/\bexperience\b/i.test(t), l:"\"Experience\" section heading"},
+    {ok:/\beducation\b/i.test(t), l:"\"Education\" section heading"},
+    {ok:/\bskills?\b/i.test(t), l:"\"Skills\" section heading"},
+    {ok:words>=350&&words<=1100, l:"Length "+words+" words (aim for 350–1,100)"},
+    {ok:bullets>=6, l:bullets+" bullet points (aim for 6+)"},
+    {ok:metrics>=5, l:metrics+" numbers or metrics (aim for 5+)"},
+    {ok:!/[│┃║■□▢◆]/.test(t), l:"No table or box characters that confuse ATS parsers"}
+  ];
+  return {score:checks.filter(c=>c.ok).length/checks.length,checks};
+}
+
+/* ================= FIT CARD ================= */
+const W={skills:.30,experience:.20,education:.10,location:.10,salary:.10,culture:.10,trajectory:.10};
+const WL={skills:"Skills",experience:"Experience",education:"Education",location:"Location",salary:"Salary",culture:"Culture",trajectory:"Trajectory"};
+function nums(s){ return (String(s||"").replace(/,/g,"").match(/\d+(\.\d+)?\s*k?/gi)||[]).map(x=>{ let v=parseFloat(x); if(/k/i.test(x)) v*=1000; return v; }).filter(v=>v>=1000); }
+function stateOf(s){ const m=String(s||"").match(/,\s*([A-Z]{2})\b/); return m?m[1]:null; }
+function sameState(a,b){ const x=stateOf(a); return !!x&&x===stateOf(b); }
+function fitCard(job){
+  const P=S.profile||{};
+  const base=(S.resume&&S.resume.text&&S.resume.text.trim())?S.resume.text:((P.skills||"")+" "+(P.background||"")+" "+(P.targetRole||""));
+  const cov=coverage(base,job.jd||"");
+  const sc={};
+  sc.skills=cov.score==null?0.5:cov.score;
+  const m=String(job.jd||"").match(/(\d{1,2})\s*\+?\s*(?:-|–|to)?\s*(?:\d{1,2})?\s*\+?\s*years?/i);
+  const req=m?parseInt(m[1],10):null, yrs=parseFloat(P.experienceYears);
+  sc.experience=req==null?0.8:(isNaN(yrs)?0.5:Math.min(1,yrs/Math.max(req,1)));
+  const jd=String(job.jd||"").toLowerCase();
+  const need=/\b(phd|ph\.d|doctorate)\b/.test(jd)?4:/\bmaster'?s?\b|\bmba\b/.test(jd)?3:/\bbachelor'?s?\b|\bbs\b|\bba\b|\bdegree\b/.test(jd)?2:/\bassociate'?s? degree\b/.test(jd)?1:0;
+  const have=parseInt(P.education||"0",10);
+  sc.education=need===0?1:(have>=need?1:(have===need-1?0.6:0.3));
+  const jl=String(job.location||"").toLowerCase(), pl=String(P.location||"").toLowerCase().split(",")[0].trim(), mob=P.mobility||"hybrid";
+  if(!jl) sc.location=0.6;
+  else if(/remote/.test(jl)) sc.location=1;
+  else if(mob==="remote") sc.location=/hybrid/.test(jl)&&pl&&jl.includes(pl)?0.6:0.2;
+  else if(pl&&jl.includes(pl)) sc.location=1;
+  else if(sameState(P.location,job.location)&&mob!=="remote") sc.location=0.8;
+  else sc.location=mob==="relocate"?0.7:0.3;
+  const sal=nums(job.salary), want=parseFloat(P.salaryMin);
+  if(!sal.length||isNaN(want)) sc.salary=0.6;
+  else { const top=Math.max(...sal); sc.salary=top>=want?1:(top>=want*0.9?0.6:0.2); }
+  sc.culture=((job.culture||3)-1)/4; sc.trajectory=((job.trajectory||3)-1)/4;
+  let fit=0; Object.keys(W).forEach(k=>fit+=W[k]*sc[k]);
+  return {fit:fit*100,sc,cov,reqYears:req,needEdu:need};
+}
+
+/* ================= ODDS MODEL ================= */
+const STAGES=[{k:"saved",l:"Saved"},{k:"applied",l:"Applied"},{k:"phone",l:"Phone screen"},{k:"int1",l:"1st interview"},{k:"final",l:"2nd / final round"},{k:"offer",l:"Offer"},{k:"rejected",l:"Not selected"},{k:"withdrawn",l:"Withdrawn"}];
+const GATES=[
+  {from:"applied",to:"phone",l:"Get a phone screen",base:0.08},
+  {from:"phone",to:"int1",l:"Reach the 1st interview",base:0.50},
+  {from:"int1",to:"final",l:"Reach the final round",base:0.45},
+  {from:"final",to:"offer",l:"Get an offer",base:0.40}];
+const ORDER=["saved","applied","phone","int1","final","offer"];
+const SIGNALS=[
+  {k:"start_date",l:"Asked about your start date or notice period",lr:1.40},
+  {k:"next_steps",l:"Described next steps with a timeline",lr:1.30},
+  {k:"ran_long",l:"Ran past the scheduled time",lr:1.30},
+  {k:"met_more",l:"Introduced you to more people or a senior leader",lr:1.25},
+  {k:"comp",l:"Discussed compensation in detail",lr:1.20},
+  {k:"selling",l:"Spent time selling you on the role",lr:1.20},
+  {k:"more_candidates",l:"Said they have \"a few more candidates\" to see",lr:0.90},
+  {k:"no_next",l:"No next steps were mentioned",lr:0.80},
+  {k:"concern",l:"Raised a concern you couldn't fully address",lr:0.75},
+  {k:"ended_early",l:"Ended noticeably early",lr:0.70}];
+const ROUND_GATE={phone:1,int1:2,final:3};
+const logit=p=>Math.log(p/(1-p)), sig=x=>1/(1+Math.exp(-x));
+const clampP=p=>Math.min(0.97,Math.max(0.01,p));
+function gateIndex(stage){ if(stage==="saved") return 0; const i=GATES.findIndex(g=>g.from===stage); return i; }
+function practiceFor(job){
+  if(!job.studioCompanyId) return null;
+  const st=studioStats().find(s=>s.id===job.studioCompanyId); return st&&st.roseAvg?st:null;
+}
+function gateProb(job,gi,opt){
+  opt=opt||{};
+  const f=opt.fit!=null?opt.fit:fitCard(job).fit;
+  let x=logit(GATES[gi].base);
+  if(gi===0){ x+=0.04*(f-50); if(opt.referral!=null?opt.referral:job.referral) x+=1.1; }
+  else {
+    x+=0.02*(f-50);
+    const pr=opt.roseAvg!=null?{roseAvg:opt.roseAvg}:practiceFor(job);
+    if(pr) x+=Math.max(-1,Math.min(1,0.5*(pr.roseAvg-3)));
+  }
+  if(!opt.noDebrief) (job.debriefs||[]).forEach(d=>{ if(ROUND_GATE[d.round]===gi) SIGNALS.forEach(s=>{ if(d.signals&&d.signals[s.k]) x+=Math.log(s.lr); }); });
+  return clampP(sig(x));
+}
+function chainFrom(job,opt){
+  const gi=gateIndex(job.stage); if(gi<0) return null;
+  const gates=[]; let cum=1;
+  for(let i=gi;i<GATES.length;i++){ const p=gateProb(job,i,opt); cum*=p; gates.push({i,p,cum}); }
+  return {gi,gates,offer:cum};
+}
+
+/* ================= STUDIO BRIDGE ================= */
+function studioCompanies(){ try{ return JSON.parse(lsGet(STUDIO_CKEY)||"[]"); }catch(e){ return []; } }
+function studioStats(){
+  const user=studioCompanies(), names={};
+  Object.assign(names,STUDIO_BUILTIN); user.forEach(c=>names[c.id]=c.name+(c.role?" · "+c.role:""));
+  const ids=new Set(Object.keys(names));
+  try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.indexOf(STUDIO_SKEY)===0) ids.add(k.slice(STUDIO_SKEY.length)); } }catch(e){}
+  return [...ids].map(id=>{
+    let st={}; try{ st=JSON.parse(lsGet(STUDIO_SKEY+id)||"{}"); }catch(e){}
+    const takes=Object.values(st||{}).filter(t=>t&&(t.rose||(t.scores&&Object.keys(t.scores).length)||t.notes));
+    const rose=takes.filter(t=>t.rose&&t.rose.overall).map(t=>+t.rose.overall);
+    const self=takes.map(t=>{ const v=Object.values(t.scores||{}).map(Number).filter(n=>n>0); return v.length?v.reduce((a,b)=>a+b,0)/v.length:null; }).filter(v=>v!=null);
+    const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+    return {id,name:names[id]||id,answered:takes.length,roseAvg:avg(rose),selfAvg:avg(self)};
+  });
+}
+function normalizeQuestions(arr){
+  return arr.filter(x=>x&&x.q).map(x=>({
+    type:["Competency","Behavioral","Role","Warmup"].includes(x.type)?x.type:"Competency",
+    lp:x.lp||"Competency", q:String(x.q), meta:x.meta||"Answer in STAR; lead with data.",
+    talk:Array.isArray(x.talk)&&x.talk.length?x.talk.map(String):["Pick a story that clearly demonstrates this competency.","Quantify the result."],
+    fu:Array.isArray(x.fu)&&x.fu.length?x.fu.map(String):["What was the measurable impact?"],
+    lpkeys:Array.isArray(x.lpkeys)?x.lpkeys.map(String):String(x.lp||"").toLowerCase().split(/[^a-z]+/).filter(Boolean),
+    model:(x.model&&x.model.a)?{s:x.model.s||"",t:x.model.t||"",a:x.model.a||"",r:x.model.r||""}:undefined
+  }));
+}
+function studioPrompt(job){
+  const P=S.profile||{}, fc=fitCard(job);
+  const bg=(P.background||"").trim()||("- Target role: "+(P.targetRole||"[role]")+"\n- Key skills: "+(P.skills||"[skills]"));
+  return "You are an expert interview coach creating a scenario-based, competency interview question bank for a candidate named "+(P.fullName||"the candidate")+".\n\n"+
+  "CANDIDATE BACKGROUND (use this to tailor questions and sample answers):\n"+bg+"\n\n"+
+  (fc.cov.miss.length?"GAPS TO PREPARE FOR (job keywords missing from the résumé): "+fc.cov.miss.slice(0,8).join(", ")+"\n\n":"")+
+  "JOB DESCRIPTION:\n"+String(job.jd||"[paste the job description]").slice(0,4000)+"\n\n"+
+  "TASK:\nCreate an interview question bank for \""+(job.company||"[Company]")+"\" for the role of \""+(job.title||"[Role]")+"\". Mirror this framework: 1 warm-up question, then 8-12 competency/behavioral questions (STAR format), plus 1-2 role/technical questions. Include at least two questions that probe the gaps above.\n\n"+
+  "OUTPUT RULES - CRITICAL:\n"+
+  "- Return ONLY a valid JSON array. No prose, no markdown, no code fences, no commentary before or after.\n"+
+  "- Each array item MUST use exactly this shape: {\"type\":\"Competency|Behavioral|Role|Warmup\",\"lp\":\"<competency or principle name>\",\"q\":\"<the interview question>\",\"meta\":\"<one-line coaching tip>\",\"talk\":[\"point 1\",\"point 2\",\"point 3\"],\"fu\":[\"follow-up 1\",\"follow-up 2\"],\"lpkeys\":[\"keyword1\",\"keyword2\",\"keyword3\"]}\n"+
+  "- For 2-3 of the most important questions, also include a \"model\" object with a full STAR sample answer written in first person, grounded only in the background above: \"model\":{\"s\":\"Situation...\",\"t\":\"Task...\",\"a\":\"Action...\",\"r\":\"Result...\"}\n"+
+  "- Keep every question answerable with the candidate's real experience. Do not ask about age, family, health, religion, national origin or other protected topics.\n"+
+  "- Return between 10 and 15 total questions.\n\nBegin now. Output the JSON array only.";
+}
+
+/* ================= RENDER: PROFILE ================= */
+const PF=["fullName","targetRole","industry","location","mobility","salaryMin","experienceYears","education","workStyle","interviewFormat","skills","dealBreakers","schedule","background"];
+function loadProfile(){ PF.forEach(f=>{ const el=$("#p_"+f); if(el&&S.profile[f]!=null) el.value=S.profile[f]; }); }
+$("#saveProfile").onclick=()=>{ PF.forEach(f=>S.profile[f]=$("#p_"+f).value.trim()); save(); $("#profileMsg").textContent="✓ Saved. Rose has what she needs."; };
+
+/* ================= RENDER: RESUME ================= */
+function jobOptions(sel,placeholder){
+  const v=sel.value; sel.innerHTML='<option value="">'+esc(placeholder)+'</option>'+S.jobs.map(j=>'<option value="'+esc(j.id)+'">'+esc(j.company+" · "+j.title)+'</option>').join(""); sel.value=v;
+}
+$("#r_job").onchange=e=>{ const j=S.jobs.find(x=>x.id===e.target.value); if(j) $("#r_jd").value=j.jd||""; };
+$("#runResume").onclick=()=>{
+  const t=$("#r_text").value, jd=$("#r_jd").value;
+  if(t.trim().length<100){ $("#resumeMsg").textContent="Paste your full résumé first."; return; }
+  S.resume.text=t; save(); $("#resumeMsg").textContent="";
+  const fm=formatChecks(t), cov=jd.trim()?coverage(t,jd):null;
+  const ats=cov&&cov.score!=null?0.7*cov.score+0.3*fm.score:fm.score;
+  const label=ats>=0.75?["Strong","up"]:ats>=0.55?["Workable","warn"]:["Needs work","down"];
+  let h='<div class="card"><div class="row" style="gap:18px;align-items:flex-end"><div><div class="muted">ATS readiness</div><div class="big">'+Math.round(ats*100)+'<span class="muted" style="font-size:15px">/100</span></div></div>'+
+    '<span class="pill">'+label[0]+'</span>'+(cov?'<div><div class="muted">Keyword match</div><div class="big">'+pct(cov.score||0)+'</div></div>':'<span class="muted">Add a job description to score keyword match.</span>')+'</div>';
+  if(cov&&cov.score!=null){
+    h+='<h3 style="margin-top:14px">Job keywords</h3><div class="chips">'+cov.hit.map(k=>'<span class="hit">✓ '+esc(k)+'</span>').join("")+cov.miss.map(k=>'<span class="miss">✗ '+esc(k)+'</span>').join("")+'</div>';
+    if(cov.miss.length) h+='<p class="muted">Gaps: work the missing terms into real bullets where they are true for you. Never add a skill you don\'t have.</p>';
+  }
+  h+='<h3 style="margin-top:14px">Formatting checks</h3><table>'+fm.checks.map(c=>'<tr><td style="width:24px">'+(c.ok?'<span class="up">✓</span>':'<span class="down">✗</span>')+'</td><td>'+esc(c.l)+'</td></tr>').join("")+'</table></div>';
+  $("#resumeReport").innerHTML=h;
+};
+$("#copyRosey").onclick=()=>{
+  const p="Act as an ATS and recruiting expert. Review my résumé against this job description. Give me: (1) a fit score out of 100, (2) the top 10 missing keywords, (3) bullets to reorder or rewrite so the most relevant work comes first, keeping everything true, (4) formatting issues an ATS would trip on.\n\nRÉSUMÉ:\n"+$("#r_text").value+"\n\nJOB DESCRIPTION:\n"+$("#r_jd").value;
+  copy(p,$("#copyRosey"));
+};
+function copy(t,btn){
+  const done=()=>{ const o=btn.textContent; btn.textContent="✓ Copied"; setTimeout(()=>btn.textContent=o,1500); };
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done).catch(()=>window.prompt("Copy:",t));
+  else window.prompt("Copy:",t);
+}
+
+/* ================= RENDER: JOBS ================= */
+const JF=["company","title","location","salary","source","url","jd"];
+function clearJobForm(){ $("#j_id").value=""; JF.forEach(f=>$("#j_"+f).value=""); $("#j_culture").value=3; $("#j_trajectory").value=3; $("#j_referral").checked=false; $("#jobFormTitle").textContent="Add a job"; }
+$("#clearJob").onclick=clearJobForm;
+$("#saveJob").onclick=()=>{
+  const id=$("#j_id").value; let j=id?S.jobs.find(x=>x.id===id):null;
+  if(!$("#j_company").value.trim()||!$("#j_title").value.trim()){ alert("Add at least a company and a job title."); return; }
+  if(!j){ j={id:uid(),stage:"saved",history:[{stage:"saved",at:new Date().toISOString()}],debriefs:[],studioCompanyId:"",createdAt:new Date().toISOString()}; S.jobs.unshift(j); }
+  JF.forEach(f=>j[f]=$("#j_"+f).value.trim()); j.culture=+$("#j_culture").value; j.trajectory=+$("#j_trajectory").value; j.referral=$("#j_referral").checked;
+  save(); clearJobForm(); renderJobs();
+};
+function editJob(id){ const j=S.jobs.find(x=>x.id===id); if(!j) return; $("#j_id").value=j.id; JF.forEach(f=>$("#j_"+f).value=j[f]||""); $("#j_culture").value=j.culture||3; $("#j_trajectory").value=j.trajectory||3; $("#j_referral").checked=!!j.referral; $("#jobFormTitle").textContent="Edit job"; window.scrollTo({top:0,behavior:"smooth"}); }
+function delJob(id){ if(!confirm("Delete this job and its application history?")) return; S.jobs=S.jobs.filter(x=>x.id!==id); S.predLog=S.predLog.filter(p=>p.jobId!==id); save(); renderAll(); }
+function bars(sc){ return Object.keys(W).map(k=>'<div class="brow"><span>'+WL[k]+' <span class="muted">'+Math.round(W[k]*100)+'%</span></span><div class="bar"><i style="width:'+Math.round(sc[k]*100)+'%"></i></div><b>'+Math.round(sc[k]*100)+'</b></div>').join(""); }
+function renderJobs(){
+  if(!S.jobs.length){ $("#jobList").innerHTML='<div class="card empty">No jobs yet. Add one above and Rose will score it.</div>'; return; }
+  $("#jobList").innerHTML=S.jobs.map(j=>{
+    const fc=fitCard(j), ch=chainFrom(Object.assign({},j,{stage:j.stage==="saved"?"applied":j.stage}));
+    const first=ch?ch.gates[0]:null;
+    return '<div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><h3 style="margin:0">'+esc(j.title)+'</h3><div class="muted">'+esc(j.company)+(j.location?' · '+esc(j.location):'')+(j.source?' · '+esc(j.source):'')+(j.url?' · <a href="'+esc(j.url)+'" target="_blank" rel="noopener">posting</a>':'')+'</div></div><span class="pill">'+esc(stageLabel(j.stage))+'</span></div>'+
+      '<div class="kpis"><div class="kpi"><div class="v">'+Math.round(fc.fit)+'%</div><div class="l">Overall fit</div></div><div class="kpi"><div class="v">'+Math.round(fc.sc.skills*100)+'%</div><div class="l">Skills</div></div><div class="kpi"><div class="v">'+Math.round(fc.sc.culture*100)+'%</div><div class="l">Culture</div></div><div class="kpi"><div class="v">'+Math.round(fc.sc.trajectory*100)+'%</div><div class="l">Growth</div></div>'+
+      (first?'<div class="kpi"><div class="v">'+pct(first.p)+'</div><div class="l">Est. '+esc(GATES[first.i].l.toLowerCase())+'</div></div>':'')+'</div>'+
+      '<details><summary class="muted" style="cursor:pointer">Score breakdown and gaps</summary>'+bars(fc.sc)+
+      (fc.cov.miss.length?'<div class="chips" style="margin-top:8px">'+fc.cov.miss.slice(0,10).map(k=>'<span class="miss">'+esc(k)+'</span>').join("")+'</div>':'')+
+      (!S.resume.text?'<p class="muted">Skills are scored from your profile. Paste your résumé in tab 2 for a sharper score.</p>':'')+'</details>'+
+      '<div class="row" style="margin-top:10px">'+(j.stage==="saved"?'<button class="btn small" data-act="apply" data-id="'+j.id+'" type="button">I applied</button>':'')+
+      '<button class="btn ghost small" data-act="prep" data-id="'+j.id+'" type="button">Prep in Studio</button><button class="btn ghost small" data-act="edit" data-id="'+j.id+'" type="button">Edit</button><button class="btn danger small" data-act="del" data-id="'+j.id+'" type="button">Delete</button></div></div>';
+  }).join("");
+}
+function stageLabel(k){ const s=STAGES.find(x=>x.k===k); return s?s.l:k; }
+
+/* ================= STAGE CHANGES & PREDICTION LOG ================= */
+function setStage(job,to){
+  const from=job.stage; if(from===to) return;
+  const now=new Date().toISOString();
+  const fi=ORDER.indexOf(from==="saved"?"applied":from), ti=ORDER.indexOf(to);
+  if(to==="rejected"){
+    const gi=gateIndex(from); if(gi>=0) logPred(job,gi,0,now);
+  } else if(to!=="withdrawn"&&ti>fi&&fi>=1){
+    for(let s=fi;s<ti;s++){ const gi=gateIndex(ORDER[s]); if(gi>=0) logPred(job,gi,1,now); }
+  } else if(ti>=0&&ti<fi){
+    const gNew=gateIndex(to); S.predLog=S.predLog.filter(p=>!(p.jobId===job.id&&p.gate>=gNew));
+  }
+  job.stage=to; (job.history=job.history||[]).push({stage:to,at:now}); save();
+}
+function logPred(job,gi,outcome,at){
+  S.predLog=S.predLog.filter(p=>!(p.jobId===job.id&&p.gate===gi));
+  S.predLog.push({jobId:job.id,gate:gi,p:+gateProb(job,gi).toFixed(4),base:GATES[gi].base,outcome,at});
+}
+
+/* ================= RENDER: APPLICATIONS ================= */
+function renderApps(){
+  const apps=S.jobs.filter(j=>j.stage!=="saved");
+  if(!apps.length){ $("#appList").innerHTML='<div class="card empty">No applications yet. In the Job fit tab, press <b>I applied</b> on a job.</div>'; return; }
+  const st=studioStats();
+  $("#appList").innerHTML=apps.map(j=>{
+    const ch=chainFrom(j), fc=fitCard(j), done=["offer","rejected","withdrawn"].includes(j.stage);
+    let h='<div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><h3 style="margin:0">'+esc(j.title)+'</h3><div class="muted">'+esc(j.company)+' · fit '+Math.round(fc.fit)+'%'+(j.referral?' · referral':'')+'</div></div>'+
+      '<select data-stage="'+j.id+'" style="width:auto">'+STAGES.filter(s=>s.k!=="saved").map(s=>'<option value="'+s.k+'"'+(s.k===j.stage?' selected':'')+'>'+s.l+'</option>').join("")+'</select></div>';
+    if(ch&&!done){
+      h+='<div class="row" style="gap:18px;margin:12px 0 6px;align-items:flex-end"><div><div class="muted">Estimated chance of an offer from here</div><div class="big">'+(ch.offer<0.01?"<1%":pct(ch.offer))+'</div></div></div>';
+      h+=ch.gates.map(g=>'<div class="brow"><span>'+esc(GATES[g.i].l)+'</span><div class="bar"><i style="width:'+Math.round(g.p*100)+'%"></i></div><b>'+pct(g.p)+'</b></div>').join("");
+      h+=boosts(j,ch);
+    } else if(j.stage==="offer") h+='<p class="up" style="margin:10px 0">🎉 Offer! Rose logged every prediction for the Learning loop.</p>';
+    else h+='<p class="muted" style="margin:10px 0">Closed. Its predictions are logged in the Learning loop.</p>';
+    const dbs=(j.debriefs||[]);
+    if(dbs.length) h+='<details style="margin-top:8px"><summary class="muted" style="cursor:pointer">'+dbs.length+' debrief'+(dbs.length>1?'s':'')+' · what moved the odds</summary>'+dbs.map(d=>debriefSummary(j,d)).join("")+'</details>';
+    h+='<div class="row" style="margin-top:10px">'+(["phone","int1","final"].includes(j.stage)?'<button class="btn small" data-act="debrief" data-id="'+j.id+'" type="button">Debrief my interview</button>':'')+
+      '<label class="muted" style="display:flex;gap:6px;align-items:center;margin:0;font-weight:400">Studio practice: <select data-studio="'+j.id+'" style="width:auto;max-width:240px"><option value="">Not linked</option>'+st.map(s=>'<option value="'+esc(s.id)+'"'+(s.id===j.studioCompanyId?' selected':'')+'>'+esc(s.name)+'</option>').join("")+'</select></label></div></div>';
+    return h;
+  }).join("");
+}
+function boosts(j,ch){
+  const out=[], baseOffer=ch.offer;
+  const tryIt=(label,opt)=>{ const c=chainFrom(j,opt); if(c&&c.offer-baseOffer>0.0005) out.push([label,c.offer-baseOffer]); };
+  if(!j.referral&&ch.gi===0) tryIt("Get a referral",{referral:true});
+  const fc=fitCard(j);
+  if(fc.cov.miss.length){
+    const add=fc.cov.miss.slice(0,3), total=fc.cov.hit.length+fc.cov.miss.length;
+    const newSkill=(fc.cov.hit.length+add.length)/total, fit=fc.fit+W.skills*(newSkill-fc.sc.skills)*100;
+    tryIt("Show real evidence of: "+add.join(", "),{fit});
+  }
+  const pr=practiceFor(j);
+  if(!pr||pr.roseAvg<4) tryIt(pr?"Lift your Studio score from "+pr.roseAvg.toFixed(1)+" to 4.0":"Practice in the Studio to a 4.0 average",{roseAvg:4});
+  if(!out.length) return "";
+  return '<div class="note" style="margin-top:10px"><b>Boost factors</b> (change in offer odds):<br>'+out.map(([l,d])=>esc(l)+' <span class="up">+'+(d*100).toFixed(d<0.01?1:0)+' pts</span>').join("<br>")+'</div>';
+}
+function debriefSummary(j,d){
+  const gi=ROUND_GATE[d.round];
+  return '<div style="margin:8px 0;padding-top:8px;border-top:1px solid var(--line)"><b>After '+esc(stageLabel(d.round))+'</b> <span class="muted">'+esc(d.at.slice(0,10))+'</span> · '+esc(GATES[gi].l)+': '+pct(d.before)+' → <b>'+pct(d.after)+'</b>'+
+    '<ul style="margin:4px 0 0;padding-left:18px">'+d.moves.map(m=>'<li>'+esc(m.l)+' <span class="'+(m.d>=0?'up':'down')+'">'+(m.d>=0?'+':'')+(m.d*100).toFixed(0)+' pts</span></li>').join("")+'</ul>'+(d.notes?'<div class="muted">'+esc(d.notes)+'</div>':'')+'</div>';
+}
+
+/* ================= DEBRIEF ================= */
+let dbJob=null;
+function openDebrief(id){
+  dbJob=S.jobs.find(x=>x.id===id); if(!dbJob) return;
+  $("#dbTitle").textContent="Debrief: "+dbJob.title+" at "+dbJob.company;
+  $("#dbSub").textContent="Tick what happened. Rose updates the odds of the next step and shows what moved them.";
+  $("#dbRound").innerHTML=["phone","int1","final"].map(k=>'<option value="'+k+'"'+(k===dbJob.stage?' selected':'')+'>'+stageLabel(k)+'</option>').join("");
+  $("#dbSignals").innerHTML=SIGNALS.map(s=>'<label><input type="checkbox" value="'+s.k+'"> <span>'+esc(s.l)+'</span></label>').join("");
+  $("#dbNotes").value="";
+  if($("#debriefDlg").showModal) $("#debriefDlg").showModal(); else $("#debriefDlg").setAttribute("open","");
+}
+function closeDebrief(){ if($("#debriefDlg").close) $("#debriefDlg").close(); else $("#debriefDlg").removeAttribute("open"); }
+$("#dbCancel").onclick=closeDebrief;
+$("#dbSave").onclick=()=>{
+  const j=dbJob; if(!j) return closeDebrief();
+  const round=$("#dbRound").value, gi=ROUND_GATE[round];
+  const signals={}; document.querySelectorAll("#dbSignals input:checked").forEach(c=>signals[c.value]=true);
+  j.debriefs=(j.debriefs||[]).filter(d=>d.round!==round);
+  const before=gateProb(j,gi);
+  let x=logit(before), prev=before; const moves=[];
+  SIGNALS.forEach(s=>{ if(signals[s.k]){ x+=Math.log(s.lr); const p=clampP(sig(x)); moves.push({l:s.l,d:p-prev}); prev=p; } });
+  const d={id:uid(),round,at:new Date().toISOString(),signals,notes:$("#dbNotes").value.trim(),before,after:before,moves};
+  j.debriefs.push(d); d.after=gateProb(j,gi);
+  save(); closeDebrief(); renderApps();
+};
+
+/* ================= PRACTICE ================= */
+$("#pr_job").onchange=()=>{ const j=S.jobs.find(x=>x.id===$("#pr_job").value); $("#pr_flow").style.display=j?"block":"none"; if(j) $("#pr_prompt").textContent=studioPrompt(j); $("#pr_msg").innerHTML=""; };
+$("#pr_copy").onclick=()=>copy($("#pr_prompt").textContent,$("#pr_copy"));
+$("#pr_send").onclick=()=>{
+  const j=S.jobs.find(x=>x.id===$("#pr_job").value); if(!j) return;
+  let raw=$("#pr_json").value.trim().replace(/^```(json)?/i,"").replace(/```$/,"").trim();
+  const a=raw.indexOf("["), b=raw.lastIndexOf("]"); if(a>=0&&b>a) raw=raw.slice(a,b+1);
+  let arr; try{ arr=JSON.parse(raw); }catch(e){ $("#pr_msg").textContent="That isn't valid JSON. Paste only the array the assistant returned."; return; }
+  const qs=Array.isArray(arr)?normalizeQuestions(arr):[];
+  if(!qs.length){ $("#pr_msg").textContent="No questions found in that JSON."; return; }
+  const list=studioCompanies();
+  const id=(j.studioCompanyId&&list.some(c=>c.id===j.studioCompanyId))?j.studioCompanyId:(String(j.company).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,30)||"co")+"-"+Math.random().toString(36).slice(2,6);
+  const co={id,name:j.company,builtin:false,role:j.title,note:"Added from Coach Rose Job Coach.",questions:qs};
+  const i=list.findIndex(c=>c.id===id); if(i>=0) list[i]=co; else list.push(co);
+  if(!lsSet(STUDIO_CKEY,JSON.stringify(list))){ $("#pr_msg").textContent="Couldn't write to browser storage."; return; }
+  j.studioCompanyId=id; save();
+  $("#pr_msg").innerHTML='✓ '+qs.length+' questions sent. <a href="../?company='+encodeURIComponent(id)+'">Open in the Studio →</a>';
+  renderStudio();
+};
+function renderStudio(){
+  const st=studioStats().filter(s=>s.answered>0||S.jobs.some(j=>j.studioCompanyId===s.id));
+  if(!st.length){ $("#studioStats").innerHTML='<p class="muted">No practice yet on this device. <a href="../">Open the Interview Studio</a> and answer a few questions; Rose\'s scores will show up here.</p>'; return; }
+  $("#studioStats").innerHTML='<div class="tablewrap"><table><tr><th>Studio company</th><th>Answers</th><th>Rose avg /5</th><th>Your avg /5</th><th>Linked application</th></tr>'+st.map(s=>{
+    const j=S.jobs.find(x=>x.studioCompanyId===s.id);
+    return '<tr><td><a href="../?company='+encodeURIComponent(s.id)+'">'+esc(s.name)+'</a></td><td>'+s.answered+'</td><td>'+(s.roseAvg?s.roseAvg.toFixed(1):"–")+'</td><td>'+(s.selfAvg?s.selfAvg.toFixed(1):"–")+'</td><td>'+(j?esc(j.company+" · "+j.title):'<span class="muted">Link one in Applications</span>')+'</td></tr>';
+  }).join("")+'</table></div>';
+}
+
+/* ================= INSIGHTS ================= */
+function renderInsights(){
+  const apps=S.jobs.filter(j=>j.stage!=="saved");
+  const reached=k=>apps.filter(j=>(j.history||[]).some(h=>ORDER.indexOf(h.stage)>=ORDER.indexOf(k))||ORDER.indexOf(j.stage)>=ORDER.indexOf(k)).length;
+  const n=apps.length, ph=reached("phone"), i1=reached("int1"), fi=reached("final"), of=reached("offer");
+  const r=(a,b)=>b?pct(a/b):"–";
+  let h='<div class="card"><h3>Your funnel</h3><div class="kpis">'+
+    '<div class="kpi"><div class="v">'+n+'</div><div class="l">Applications</div></div>'+
+    '<div class="kpi"><div class="v">'+r(ph,n)+'</div><div class="l">Got a phone screen</div></div>'+
+    '<div class="kpi"><div class="v">'+r(i1,n)+'</div><div class="l">Reached an interview</div></div>'+
+    '<div class="kpi"><div class="v">'+r(fi,n)+'</div><div class="l">Reached a final round</div></div>'+
+    '<div class="kpi"><div class="v">'+r(of,n)+'</div><div class="l">Offer rate</div></div></div>'+
+    '<p class="muted">Benchmarks from the POC: about 3% of applicants reach an interview and roughly 1 in 180 is hired.</p></div>';
+  const L=S.predLog;
+  h+='<div class="card"><h3>How honest are Rose\'s odds?</h3>';
+  if(!L.length){ h+='<p class="muted">Nothing to score yet. Each time you move an application forward or mark it "Not selected", the odds Rose showed for that step are logged here.</p></div>'; $("#insights").innerHTML=h; return; }
+  const brier=L.reduce((a,p)=>a+Math.pow(p.p-p.outcome,2),0)/L.length;
+  const bBase=L.reduce((a,p)=>a+Math.pow(p.base-p.outcome,2),0)/L.length;
+  const skill=bBase>0?1-brier/bBase:0;
+  h+='<div class="kpis"><div class="kpi"><div class="v">'+L.length+'</div><div class="l">Resolved predictions</div></div>'+
+    '<div class="kpi"><div class="v">'+brier.toFixed(3)+'</div><div class="l">Brier score (lower is better)</div></div>'+
+    '<div class="kpi"><div class="v">'+bBase.toFixed(3)+'</div><div class="l">Brier using benchmark rates only</div></div>'+
+    '<div class="kpi"><div class="v '+(skill>=0?'up':'down')+'">'+(skill>=0?'+':'')+Math.round(skill*100)+'%</div><div class="l">Better than benchmarks</div></div></div>';
+  h+=L.length<20?'<p class="muted">Fewer than 20 resolved predictions: treat these numbers as early signals, not proof.</p>':'';
+  const bins=[[0,.1],[.1,.25],[.25,.5],[.5,1.01]];
+  h+='<div class="tablewrap"><table><tr><th>Rose said</th><th>Predictions</th><th>Average shown</th><th>Actually happened</th></tr>'+bins.map(([a,b])=>{
+    const g=L.filter(p=>p.p>=a&&p.p<b); if(!g.length) return '';
+    const av=g.reduce((x,p)=>x+p.p,0)/g.length, hit=g.reduce((x,p)=>x+p.outcome,0)/g.length;
+    return '<tr><td>'+Math.round(a*100)+'–'+Math.min(100,Math.round(b*100))+'%</td><td>'+g.length+'</td><td>'+pct(av)+'</td><td>'+pct(hit)+'</td></tr>';
+  }).join("")+'</table></div>';
+  h+='<h3 style="margin-top:14px">By stage</h3><div class="tablewrap"><table><tr><th>Step</th><th>Predictions</th><th>Average shown</th><th>Actual rate</th><th>Benchmark</th></tr>'+GATES.map((g,i)=>{
+    const s=L.filter(p=>p.gate===i); if(!s.length) return '';
+    return '<tr><td>'+esc(g.l)+'</td><td>'+s.length+'</td><td>'+pct(s.reduce((x,p)=>x+p.p,0)/s.length)+'</td><td>'+pct(s.reduce((x,p)=>x+p.outcome,0)/s.length)+'</td><td>'+pct(g.base)+'</td></tr>';
+  }).join("")+'</table></div><p class="muted">When "Actual rate" keeps beating "Average shown" for a step, Rose is too pessimistic there, and the reverse. Use the backup file to refit the weights once you have enough outcomes.</p></div>';
+  $("#insights").innerHTML=h;
+}
+
+/* ================= DATA ================= */
+$("#exportData").onclick=()=>{
+  const blob=new Blob([JSON.stringify(Object.assign({exportedAt:new Date().toISOString()},S),null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="jobcoach-"+new Date().toISOString().slice(0,10)+".json"; a.click();
+};
+$("#importData").onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  f.text().then(t=>{ const d=JSON.parse(t); if(!d||d.schemaVersion!==1||!Array.isArray(d.jobs)) throw new Error("bad");
+    if(!confirm("Replace your current Job Coach data with this backup?")) return;
+    delete d.exportedAt; S=Object.assign(blank(),d); save(); loadProfile(); $("#r_text").value=S.resume.text||""; $("#dataMsg").textContent="✓ Restored "+S.jobs.length+" jobs."; renderAll();
+  }).catch(()=>{ $("#dataMsg").textContent="That file isn't a Job Coach backup."; });
+  e.target.value="";
+};
+$("#resetData").onclick=()=>{ if(!confirm("Clear all Job Coach data on this device? Your Studio practice is not affected.")) return; S=blank(); save(); location.reload(); };
+
+/* ================= EVENTS & BOOT ================= */
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  const id=b.dataset.id, j=S.jobs.find(x=>x.id===id);
+  if(b.dataset.act==="edit") editJob(id);
+  else if(b.dataset.act==="del") delJob(id);
+  else if(b.dataset.act==="apply"&&j){ setStage(j,"applied"); showTab("apps"); }
+  else if(b.dataset.act==="prep"&&j){ showTab("practice"); $("#pr_job").value=id; $("#pr_job").onchange(); }
+  else if(b.dataset.act==="debrief") openDebrief(id);
+});
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.dataset.stage){ const j=S.jobs.find(x=>x.id===t.dataset.stage); if(j){ setStage(j,t.value); renderApps(); } }
+  if(t.dataset.studio!=null&&t.dataset.studio!==""){ const j=S.jobs.find(x=>x.id===t.dataset.studio); if(j){ j.studioCompanyId=t.value; save(); renderApps(); } }
+});
+function renderAll(){
+  jobOptions($("#r_job"),"Paste a JD below, or pick a saved job…");
+  jobOptions($("#pr_job"),"Pick a saved job…");
+  renderJobs(); renderApps(); renderStudio(); renderInsights();
+}
+loadProfile(); $("#r_text").value=S.resume.text||"";
+(()=>{ const t=lsGet("jobcoach_tab"); if(t&&$("#s-"+t)) showTab(t); else renderAll(); })();
+</script>
+</body>
+</html>
