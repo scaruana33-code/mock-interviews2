@@ -130,6 +130,7 @@
     <div class="brand">Coach <span>Rose Nylund's</span> Mock Interview Studio</div>
     <div class="sub">Company-based interview prep · powered by the Copilot Interview Agent</div>
   </div>
+  <a href="coach/" style="margin-left:auto;font-weight:600;color:inherit;border:1px solid currentColor;border-radius:8px;padding:6px 12px;text-decoration:none;white-space:nowrap">📊 Job Coach</a>
 </header>
 
 <div class="wrap">
@@ -840,6 +841,7 @@ function saveUserCompanies(list){ localStorage.setItem(CKEY, JSON.stringify(list
 let userCompanies = loadUserCompanies();
 let companies = BUILTIN_COMPANIES.concat(userCompanies);
 let companyId = companies[0].id;
+try{ const qc=new URLSearchParams(location.search).get("company"); if(qc&&companies.some(c=>c.id===qc)) companyId=qc; }catch(e){}
 function currentCompany(){ return companies.find(c=>c.id===companyId) || companies[0]; }
 function QUESTIONS(){ return currentCompany().questions; }
 function storeKey(){ return SKEY_PREFIX+companyId; }
