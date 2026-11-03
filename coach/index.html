@@ -77,7 +77,7 @@ th{color:var(--quiet);font-weight:600}
 .signals{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 16px;margin:8px 0}
 .signals label{font-weight:400;display:flex;gap:8px;align-items:flex-start;margin:0}
 .empty{color:var(--quiet);text-align:center;padding:24px}
-dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);max-width:720px;width:calc(100% - 32px);padding:18px}
+dialog{max-height:92vh;overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);max-width:720px;width:calc(100% - 32px);padding:18px}
 dialog::backdrop{background:rgba(20,10,15,.45)}
 pre.prompt{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:12px;max-height:220px;overflow:auto}
 footer{max-width:1040px;margin:0 auto;padding:8px 16px 32px;color:var(--quiet);font-size:12px}
@@ -389,10 +389,11 @@ footer{max-width:1040px;margin:0 auto;padding:8px 16px 32px;color:var(--quiet);f
   <h3 id="dbTitle">Post-interview debrief</h3>
   <p class="muted" id="dbSub"></p>
   <div><label>Which round did you just have?</label><select id="dbRound"></select></div>
-  <div class="signals" id="dbSignals"></div>
+  <fieldset id="dbNextSet" style="border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:10px 0"><legend style="font-weight:600">Did they give next steps? <span class="down">*</span></legend><div id="dbNext"></div></fieldset>
+  <div id="dbSignals"></div>
   <div><label>Notes <span class="hint">(optional)</span></label><textarea id="dbNotes" style="min-height:70px"></textarea></div>
   <p class="muted">Only describe what happened in the interview. Never record anything about the interviewer's or your own age, race, gender, disability or other protected traits.</p>
-  <div class="row"><button class="btn" id="dbSave" type="button">Update my odds</button><button class="btn ghost" id="dbCancel" type="button">Cancel</button></div>
+  <div class="row"><button class="btn" id="dbSave" type="button">Update my odds</button><span class="down" id="dbMsg"></span><button class="btn ghost" id="dbCancel" type="button">Cancel</button></div>
 </dialog>
 
 <footer>
@@ -517,17 +518,59 @@ const GATES=[
   {from:"int1",to:"final",l:"Reach the final round",base:0.45},
   {from:"final",to:"offer",l:"Get an offer",base:0.40}];
 const ORDER=["saved","applied","phone","int1","final","offer"];
-const SIGNALS=[
-  {k:"start_date",l:"Asked about your start date or notice period",lr:1.40},
-  {k:"next_steps",l:"Described next steps with a timeline",lr:1.30},
-  {k:"ran_long",l:"Ran past the scheduled time",lr:1.30},
-  {k:"met_more",l:"Introduced you to more people or a senior leader",lr:1.25},
-  {k:"comp",l:"Discussed compensation in detail",lr:1.20},
-  {k:"selling",l:"Spent time selling you on the role",lr:1.20},
-  {k:"more_candidates",l:"Said they have \"a few more candidates\" to see",lr:0.90},
-  {k:"no_next",l:"No next steps were mentioned",lr:0.80},
-  {k:"concern",l:"Raised a concern you couldn't fully address",lr:0.75},
-  {k:"ended_early",l:"Ended noticeably early",lr:0.70}];
+/* Debrief signals. tier: sp strong positive, mp moderate positive, nu neutral/process, pc potential concern, sn strong negative.
+   lr = hand-set likelihood ratio on the odds of clearing the next gate; norm = often just normal recruiting process. */
+const TIERS={sp:"Strong positive signals",mp:"Moderate positive signals",nu:"Neutral / process signals",pc:"Potential concern signals",sn:"Strong negative signals"};
+const NEXT_STEPS=[
+  {k:"next_steps",l:"Yes, a specific next step or decision timeline",al:"Gave a specific next step or decision timeline",tier:"sp",lr:1.30},
+  {k:"next_vague",l:"Only vague (\"we'll be in touch\", \"you should hear from us\")",al:"Next steps were only vague (\"we'll be in touch\")",tier:"nu",lr:0.95,norm:true},
+  {k:"no_next",l:"No next steps at all",al:"Gave no next steps at all",tier:"pc",lr:0.80}];
+const SIGNAL_GROUPS=[
+  {g:"Next steps & closing signals",items:[
+    {k:"timeline_decision",l:"Gave a specific date or timeline for a decision",tier:"sp",lr:1.30},
+    {k:"followup_who",l:"Said when the recruiter or hiring manager would follow up",tier:"mp",lr:1.10},
+    {k:"later_stage",l:"Mentioned another interview, final approval, references, background check or offer stage",tier:"sp",lr:1.30},
+    {k:"start_date",l:"Asked about your availability to start",tier:"sp",lr:1.40},
+    {k:"comp",l:"Reconfirmed your salary expectations",tier:"mp",lr:1.15,norm:true},
+    {k:"logistics",l:"Discussed benefits, PTO, hybrid schedule, location, hours or onboarding",tier:"mp",lr:1.20},
+    {k:"other_offers",l:"Asked if you're interviewing elsewhere or have other offers",tier:"mp",lr:1.15,norm:true},
+    {k:"more_candidates",l:"Said they still have other candidates to interview",tier:"nu",lr:0.95,norm:true}]},
+  {g:"Interviewer behavior",items:[
+    {k:"ran_long",l:"Ran over the scheduled time",tier:"mp",lr:1.20},
+    {k:"ran_short",l:"Ran noticeably under the scheduled time",tier:"pc",lr:0.85},
+    {k:"conversational",l:"Became conversational rather than strict Q&A",tier:"mp",lr:1.15},
+    {k:"selling",l:"Spent real time selling the company, team or role",tier:"mp",lr:1.20},
+    {k:"met_more",l:"Introduced you to more team members or leadership",tier:"sp",lr:1.25},
+    {k:"tour",l:"Gave an office tour or showed where you'd sit or work",tier:"mp",lr:1.15},
+    {k:"future_lang",l:"Used future language (\"when you join\", \"you'd be working with\", \"you'll own…\")",tier:"mp",lr:1.20},
+    {k:"real_problems",l:"Discussed actual problems or projects they want you to solve",tier:"mp",lr:1.15},
+    {k:"ended_early",l:"Seemed rushed or ended the conversation abruptly",tier:"sn",lr:0.70}]},
+  {g:"Candidate fit signals",items:[
+    {k:"strong_match",l:"Said your experience was a strong match",tier:"sp",lr:1.30},
+    {k:"mapped_exp",l:"Connected your specific experience to specific responsibilities",tier:"mp",lr:1.20},
+    {k:"ramp",l:"Discussed how quickly you could become productive",tier:"mp",lr:1.15},
+    {k:"concern",l:"Raised concerns about missing qualifications",tier:"pc",lr:0.80},
+    {k:"challenged",l:"Repeatedly challenged or questioned one part of your experience",tier:"pc",lr:0.85},
+    {k:"over_under",l:"Said you seemed overqualified or underqualified",tier:"sn",lr:0.70}]},
+  {g:"Process signals after the interview",hint:"Come back and tick these as they happen; the odds update each time.",items:[
+    {k:"fast_follow",l:"Followed up faster than promised",tier:"mp",lr:1.20},
+    {k:"slow_follow",l:"Followed up later than promised",tier:"pc",lr:0.85,norm:true},
+    {k:"more_info",l:"Recruiter asked for more information",tier:"mp",lr:1.15,norm:true},
+    {k:"references",l:"Asked for references",tier:"sp",lr:1.45},
+    {k:"extra_round",l:"Asked for another conversation after the supposed final round",tier:"nu",lr:1.00,norm:true},
+    {k:"posting_closed",l:"The job posting closed",tier:"nu",lr:1.00,norm:true},
+    {k:"reposted",l:"The posting reopened or was reposted",tier:"sn",lr:0.70},
+    {k:"went_silent",l:"Silence after a lot of recruiter engagement",tier:"pc",lr:0.80},
+    {k:"personal_update",l:"Sent a personalized status update",tier:"mp",lr:1.10},
+    {k:"generic_update",l:"Sent a generic status update",tier:"pc",lr:0.85,norm:true}]}];
+const SIGNALS=NEXT_STEPS.concat(...SIGNAL_GROUPS.map(g=>g.items));
+const DEBRIEF_CAP=1.6; // max total debrief shift in log-odds, so many correlated ticks can't run away
+function debriefLogs(signals){
+  const on=SIGNALS.filter(s=>signals&&signals[s.k]).map(s=>({s,v:Math.log(s.lr)}));
+  // cap positives and negatives separately, so a pile of friendly signals can't drown out one red flag
+  const pos=on.filter(o=>o.v>0).reduce((a,o)=>a+o.v,0), neg=-on.filter(o=>o.v<0).reduce((a,o)=>a+o.v,0);
+  on.forEach(o=>{ if(o.v>0&&pos>DEBRIEF_CAP) o.v*=DEBRIEF_CAP/pos; if(o.v<0&&neg>DEBRIEF_CAP) o.v*=DEBRIEF_CAP/neg; }); return on;
+}
 const ROUND_GATE={phone:1,int1:2,final:3};
 const logit=p=>Math.log(p/(1-p)), sig=x=>1/(1+Math.exp(-x));
 const clampP=p=>Math.min(0.97,Math.max(0.01,p));
@@ -546,7 +589,7 @@ function gateProb(job,gi,opt){
     const pr=opt.roseAvg!=null?{roseAvg:opt.roseAvg}:practiceFor(job);
     if(pr) x+=Math.max(-1,Math.min(1,0.5*(pr.roseAvg-3)));
   }
-  if(!opt.noDebrief) (job.debriefs||[]).forEach(d=>{ if(ROUND_GATE[d.round]===gi) SIGNALS.forEach(s=>{ if(d.signals&&d.signals[s.k]) x+=Math.log(s.lr); }); });
+  if(!opt.noDebrief) (job.debriefs||[]).forEach(d=>{ if(ROUND_GATE[d.round]===gi) debriefLogs(d.signals).forEach(o=>x+=o.v); });
   return clampP(sig(x));
 }
 function chainFrom(job,opt){
@@ -1026,7 +1069,7 @@ function renderApps(){
     } else if(j.stage==="offer") h+='<p class="up" style="margin:10px 0">🎉 Offer! Rose logged every prediction for the Learning loop.</p>';
     else h+='<p class="muted" style="margin:10px 0">Closed. Its predictions are logged in the Learning loop.</p>';
     const dbs=(j.debriefs||[]);
-    if(dbs.length) h+='<details style="margin-top:8px"><summary class="muted" style="cursor:pointer">'+dbs.length+' debrief'+(dbs.length>1?'s':'')+' · what moved the odds</summary>'+dbs.map(d=>debriefSummary(j,d)).join("")+'</details>';
+    if(dbs.length) h+='<details style="margin-top:8px"'+(dbs.some(d=>d.id===openDebriefFor)?' open':'')+'><summary class="muted" style="cursor:pointer">'+dbs.length+' debrief'+(dbs.length>1?'s':'')+' · what moved the odds</summary>'+dbs.map(d=>debriefSummary(j,d)).join("")+'</details>';
     h+='<div class="row" style="margin-top:10px">'+(["phone","int1","final"].includes(j.stage)?'<button class="btn small" data-act="debrief" data-id="'+j.id+'" type="button">Debrief my interview</button>':'')+
       '<label class="muted" style="display:flex;gap:6px;align-items:center;margin:0;font-weight:400">Studio practice: <select data-studio="'+j.id+'" style="width:auto;max-width:240px"><option value="">Not linked</option>'+st.map(s=>'<option value="'+esc(s.id)+'"'+(s.id===j.studioCompanyId?' selected':'')+'>'+esc(s.name)+'</option>').join("")+'</select></label></div></div>';
     return h;
@@ -1050,7 +1093,54 @@ function boosts(j,ch){
 function debriefSummary(j,d){
   const gi=ROUND_GATE[d.round];
   return '<div style="margin:8px 0;padding-top:8px;border-top:1px solid var(--line)"><b>After '+esc(stageLabel(d.round))+'</b> <span class="muted">'+esc(d.at.slice(0,10))+'</span> · '+esc(GATES[gi].l)+': '+pct(d.before)+' → <b>'+pct(d.after)+'</b>'+
-    '<ul style="margin:4px 0 0;padding-left:18px">'+d.moves.map(m=>'<li>'+esc(m.l)+' <span class="'+(m.d>=0?'up':'down')+'">'+(m.d>=0?'+':'')+(m.d*100).toFixed(0)+' pts</span></li>').join("")+'</ul>'+(d.notes?'<div class="muted">'+esc(d.notes)+'</div>':'')+'</div>';
+    '<ul style="margin:4px 0 0;padding-left:18px">'+d.moves.map(m=>'<li>'+esc(m.l)+' <span class="'+(m.d>=0?'up':'down')+'">'+(m.d>=0?'+':'')+(m.d*100).toFixed(0)+' pts</span></li>').join("")+'</ul>'+(d.notes?'<div class="muted">'+esc(d.notes)+'</div>':'')+debriefAnalysisHtml(j,d)+'</div>';
+}
+let openDebriefFor=null;
+function debriefAnalysis(j,d){
+  const sg=d.signals||{}, on=SIGNALS.filter(s=>sg[s.k]), has=k=>!!sg[k], gi=ROUND_GATE[d.round], p=d.after;
+  const byTier={}; const L=s=>s.al||s.l; Object.keys(TIERS).forEach(t=>byTier[t]=on.filter(s=>s.tier===t).map(L));
+  const pos=on.filter(s=>s.tier==="sp"||s.tier==="mp"), neg=on.filter(s=>s.tier==="pc"||s.tier==="sn");
+  const next=GATES[gi].l.replace(/^Get an? |^Reach the /,"").toLowerCase(), rl=stageLabel(d.round);
+  let stage;
+  const cold=has("reposted")||has("went_silent");
+  if(cold&&p<0.5) stage="Possibly on hold, or moving forward with someone else, after the "+rl+". Not confirmed.";
+  else if(cold) stage="Mixed: the interview signals were strong, but "+(has("reposted")?"the posting was reposted":"the recruiter has gone quiet")+" since. Confirm your status with the recruiter.";
+  else if(has("references")||(has("start_date")&&has("later_stage"))) stage="Late stage: likely being considered for the "+(gi===3?"offer":next)+" (references or start-date talk).";
+  else if(p>=0.6) stage="Likely advancing to the "+next+".";
+  else if(p>=0.35) stage="Under active consideration after the "+rl+"; the decision isn't made yet.";
+  else stage="At risk of not advancing past the "+rl+".";
+  const unknown=[];
+  if(!has("next_steps")&&!has("timeline_decision")) unknown.push("When they will decide (no specific timeline was given)");
+  if(!has("more_candidates")&&!has("other_offers")) unknown.push("How many other candidates are still in the process");
+  if(!has("comp")&&gi>=2) unknown.push("Whether your salary expectations fit their range");
+  if(!SIGNAL_GROUPS[3].items.some(s=>has(s.k))) unknown.push("How follow-up goes. Tick the after-interview signals as they happen");
+  unknown.push("How you compare with the other candidates; no debrief can see that");
+  const act=[];
+  act.push("Send a short thank-you note within 24 hours"+(has("concern")||has("challenged")?", with one concrete example that answers the concern they raised.":"."));
+  if(has("next_steps")||has("timeline_decision")) act.push("Wait until the date they gave. If you hear nothing, check in with the recruiter 1 to 2 business days after it passes.");
+  else act.push("Ask the recruiter for the expected timeline and next step, so you know when to follow up.");
+  if(has("went_silent")||has("slow_follow")) act.push("Send one polite check-in to the recruiter, then keep applying elsewhere so this one decision isn't carrying everything.");
+  if(has("references")) act.push("Brief your references today: the role, what to stress, and that a call is coming.");
+  if(has("start_date")||has("comp")) act.push("Have your start date and salary answer ready in case an offer call comes quickly.");
+  if(has("reposted")) act.push("Ask the recruiter directly whether the role is still open for you.");
+  const change=[];
+  if(!has("next_steps")&&!has("timeline_decision")) change.push("A specific decision date or a scheduled next round (strongest single signal)");
+  if(!has("references")) change.push("A request for references (raises the odds a lot)");
+  if(!has("went_silent")&&!has("reposted")) change.push("Silence past the promised date, or the posting being reposted (lowers the odds)");
+  if(gi<3) change.push("An invitation to the "+next);
+  return {byTier,stage,forE:pos.map(L),against:neg.map(L),normal:on.filter(s=>s.norm).map(L),unknown,act,change};
+}
+function debriefAnalysisHtml(j,d){
+  const a=debriefAnalysis(j,d), li=x=>x.length?'<ul style="margin:2px 0 6px;padding-left:18px">'+x.map(v=>'<li>'+esc(v)+'</li>').join("")+'</ul>':'<div class="muted" style="margin:2px 0 6px">None recorded.</div>';
+  const tierCls={sp:"up",mp:"up",nu:"muted",pc:"down",sn:"down"};
+  return '<details id="an_'+d.id+'" style="margin-top:6px"'+(openDebriefFor===d.id?' open':'')+'><summary style="cursor:pointer"><b>Final analysis</b></summary><div class="note">'+
+    Object.keys(TIERS).filter(t=>a.byTier[t].length).map(t=>'<div><span class="'+tierCls[t]+'">'+esc(TIERS[t])+'</span>'+li(a.byTier[t])+'</div>').join("")+
+    '<ol style="padding-left:18px;margin:8px 0 0">'+
+    '<li><b>Most likely current stage:</b> '+esc(a.stage)+' <span class="muted">(next-step odds '+pct(d.after)+')</span></li>'+
+    '<li><b>Evidence supporting it</b>'+li(a.forE)+'</li><li><b>Evidence against it</b>'+li(a.against)+'</li>'+
+    '<li><b>What may simply be normal recruiting process</b>'+li(a.normal)+'</li><li><b>What remains unknown</b>'+li(a.unknown)+'</li>'+
+    '<li><b>Recommended follow-up</b>'+li(a.act)+'</li><li><b>What would materially change this</b>'+li(a.change)+'</li></ol>'+
+    '<div class="muted" style="font-size:12px">A clear next step or decision date tells you far more than tone or friendliness. These are estimates, not a guarantee.</div></div></details>';
 }
 
 /* ================= DEBRIEF ================= */
@@ -1060,8 +1150,13 @@ function openDebrief(id){
   $("#dbTitle").textContent="Debrief: "+dbJob.title+" at "+dbJob.company;
   $("#dbSub").textContent="Tick what happened. Rose updates the odds of the next step and shows what moved them.";
   $("#dbRound").innerHTML=["phone","int1","final"].map(k=>'<option value="'+k+'"'+(k===dbJob.stage?' selected':'')+'>'+stageLabel(k)+'</option>').join("");
-  $("#dbSignals").innerHTML=SIGNALS.map(s=>'<label><input type="checkbox" value="'+s.k+'"> <span>'+esc(s.l)+'</span></label>').join("");
-  $("#dbNotes").value="";
+  $("#dbNext").innerHTML=NEXT_STEPS.map(s=>'<label style="font-weight:400;display:flex;gap:8px;margin:4px 0"><input type="radio" name="dbNext" value="'+s.k+'" style="width:auto;flex:none;margin-top:3px"> <span>'+esc(s.l)+'</span></label>').join("");
+  $("#dbSignals").innerHTML=SIGNAL_GROUPS.map(g=>'<h4 style="margin:12px 0 2px">'+esc(g.g)+'</h4>'+(g.hint?'<div class="muted" style="font-size:12px">'+esc(g.hint)+'</div>':'')+'<div class="signals">'+g.items.map(s=>'<label><input type="checkbox" value="'+s.k+'"> <span>'+esc(s.l)+'</span></label>').join("")+'</div>').join("");
+  $("#dbNotes").value=""; $("#dbMsg").textContent="";
+  const fill=()=>{ const prev=(dbJob.debriefs||[]).find(d=>d.round===$("#dbRound").value);
+    document.querySelectorAll('#dbNext input,#dbSignals input').forEach(c=>c.checked=!!(prev&&prev.signals&&prev.signals[c.value]));
+    $("#dbNotes").value=prev?prev.notes||"":""; };
+  $("#dbRound").onchange=fill; fill();
   if($("#debriefDlg").showModal) $("#debriefDlg").showModal(); else $("#debriefDlg").setAttribute("open","");
 }
 function closeDebrief(){ if($("#debriefDlg").close) $("#debriefDlg").close(); else $("#debriefDlg").removeAttribute("open"); }
@@ -1069,14 +1164,17 @@ $("#dbCancel").onclick=closeDebrief;
 $("#dbSave").onclick=()=>{
   const j=dbJob; if(!j) return closeDebrief();
   const round=$("#dbRound").value, gi=ROUND_GATE[round];
-  const signals={}; document.querySelectorAll("#dbSignals input:checked").forEach(c=>signals[c.value]=true);
+  const ns=document.querySelector('#dbNext input:checked');
+  if(!ns){ $("#dbMsg").textContent="Please answer \"Did they give next steps?\" first."; $("#dbNextSet").scrollIntoView({block:"center"}); return; }
+  const signals={}; signals[ns.value]=true; document.querySelectorAll("#dbSignals input:checked").forEach(c=>signals[c.value]=true);
   j.debriefs=(j.debriefs||[]).filter(d=>d.round!==round);
   const before=gateProb(j,gi);
   let x=logit(before), prev=before; const moves=[];
-  SIGNALS.forEach(s=>{ if(signals[s.k]){ x+=Math.log(s.lr); const p=clampP(sig(x)); moves.push({l:s.l,d:p-prev}); prev=p; } });
+  debriefLogs(signals).forEach(o=>{ x+=o.v; const p=clampP(sig(x)); moves.push({l:o.s.al||o.s.l,d:p-prev}); prev=p; });
   const d={id:uid(),round,at:new Date().toISOString(),signals,notes:$("#dbNotes").value.trim(),before,after:before,moves};
   j.debriefs.push(d); d.after=gateProb(j,gi);
-  save(); closeDebrief(); renderApps();
+  save(); closeDebrief(); openDebriefFor=d.id; renderApps(); openDebriefFor=null;
+  const el=document.getElementById("an_"+d.id); if(el) el.scrollIntoView({block:"start"});
   wfFire("debrief",{job:j,round});
 };
 
