@@ -100,6 +100,7 @@ footer{max-width:1040px;margin:0 auto;padding:8px 16px 32px;color:var(--quiet);f
 <nav><div class="nwrap" id="tabs">
   <button data-t="profile" class="on">1 · Profile</button>
   <button data-t="resume">2 · Résumé</button>
+  <button data-t="tailor">✂️ Tailor</button>
   <button data-t="jobs">3 · Job fit</button>
   <button data-t="apps">4 · Applications &amp; odds</button>
   <button data-t="practice">5 · Practice</button>
@@ -158,6 +159,25 @@ footer{max-width:1040px;margin:0 auto;padding:8px 16px 32px;color:var(--quiet);f
     </div>
   </div>
   <div id="resumeReport"></div>
+</section>
+
+<!-- ============ TAILOR ============ -->
+<section id="s-tailor">
+  <h2>Tailor my résumé &amp; ATS check</h2>
+  <p class="lead">Use it any time: paste a job description, and Rose maps every keyword to your master résumé, scores ATS coverage, reorders your bullets so the best matches come first, and writes a prompt for a free AI to do the rewording. Your master résumé is the only source of facts; gaps become questions, never new claims.</p>
+  <div class="card">
+    <div class="grid2">
+      <div><label>Master résumé <span class="hint">(saved on this device only)</span></label>
+        <textarea id="t_master" style="min-height:220px" placeholder="Paste your master résumé as plain text or Markdown."></textarea>
+        <div class="row" style="margin-top:6px"><label class="btn ghost small" style="margin:0">📂 Load .txt / .md<input type="file" id="t_masterFile" accept=".txt,.md,text/plain,text/markdown" style="display:none"></label><button class="btn ghost small" id="t_useResume" type="button">Use the résumé from tab 2</button></div></div>
+      <div><label>Job description</label>
+        <select id="t_job" style="margin-bottom:6px"><option value="">Paste a JD below, or pick a saved job…</option></select>
+        <textarea id="t_jd" style="min-height:182px"></textarea>
+        <div class="grid2" style="margin-top:6px;gap:8px"><input id="t_company" placeholder="Company (optional)"><input id="t_title" placeholder="Target title (optional)"></div></div>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="t_run" type="button">✂️ Tailor &amp; score</button><span class="muted" id="t_msg"></span></div>
+  </div>
+  <div id="t_out"></div>
 </section>
 
 <!-- ============ JOBS ============ -->
@@ -233,7 +253,7 @@ footer{max-width:1040px;margin:0 auto;padding:8px 16px 32px;color:var(--quiet);f
       <label class="btn ghost" style="margin:0">📂 Restore from backup<input type="file" id="importData" accept="application/json,.json" style="display:none"></label>
       <button class="btn danger" id="resetData" type="button">Clear all Job Coach data</button>
     </div>
-    <p class="muted" id="dataMsg" style="margin-top:10px">The backup uses schemaVersion 1 records: profile, résumé, jobs (each with its applications stage, debriefs and Studio link) and the prediction log. Studio practice data stays in the Studio's own backup.</p>
+    <p class="muted" id="dataMsg" style="margin-top:10px">The backup uses schemaVersion 1 records: profile, résumé, master résumé for tailoring, jobs (each with its applications stage, debriefs and Studio link) and the prediction log. Studio practice data stays in the Studio's own backup.</p>
   </div>
 </section>
 </main>
@@ -487,6 +507,165 @@ function copy(t,btn){
   else window.prompt("Copy:",t);
 }
 
+/* ================= TAILOR & ATS (ad hoc) ================= */
+const SYN=[
+  ["contingent workforce","external workforce","extended workforce","contingent labor","contractor"],
+  ["vendor management","supplier management","supplier governance","msp governance","supplier & msp"],
+  ["vendor management system","vms","beeline","fieldglass"],
+  ["managed service provider","msp"],
+  ["statement of work","sow"],
+  ["stakeholder","partners with","cross-functional","hiring managers"],
+  ["program management","program manager","project management","pmo"],
+  ["process improvement","continuous improvement","root-cause","workflow redesign"],
+  ["change management","change adoption"],
+  ["data analysis","sql","power bi","alteryx","analytics"],
+  ["reporting","dashboard","metrics","kpi"],
+  ["automation","rpa","power automate","workflow automation"],
+  ["artificial intelligence","ai","copilot","azure ai","chatbot"],
+  ["compliance","audit","controls","co-employment","worker classification"],
+  ["onboarding","offboarding","worker lifecycle"],
+  ["integration","integrations","api","apis"],
+  ["user acceptance testing","uat"],
+  ["agile","safe","scrum","sprints"],
+  ["service level","sla","slas"],
+  ["procurement","sourcing","purchasing","p2p"],
+  ["training","enablement","user guides","coached"],
+  ["hr","human resources","hris","hcm","workday","oracle hcm"]];
+function synHit(master,term){
+  const t=term.toLowerCase();
+  return SYN.some(g=>g.some(x=>x===t||(t.length>3&&(x.includes(t)||t.includes(x))))&&g.some(x=>hasTerm(master,x)));
+}
+function exactHit(master,term){ return (" "+String(master).toLowerCase().replace(/[^a-z0-9+#]+/g," ")+" ").includes(" "+term.toLowerCase().replace(/[^a-z0-9+#]+/g," ").trim()+" "); }
+function splitReqs(jd){
+  const sents=String(jd).split(/(?<=[.!?;])\s+|\n+/).map(s=>s.trim()).filter(Boolean);
+  let mode="must"; const must=[],nice=[];
+  sents.forEach(s=>{
+    if(/^(preferred|nice to have|nice-to-have|bonus|desired)/i.test(s)) mode="nice";
+    else if(/\b(preferred|nice to have|nice-to-have|bonus|a plus|desired|ideally)\b/i.test(s)) { nice.push(s); return; }
+    else if(/^(required|requirements|qualifications|must|minimum|what you)/i.test(s)) mode="must";
+    (mode==="nice"?nice:must).push(s);
+  });
+  return {must:must.join(" "),nice:nice.join(" ")};
+}
+const T_EXTRA=new Set("lead leads leading partner partners performance seeking manage manages drive drives build builds strong own owns responsibilities requirements preferred experience ability responsible proven deep solid excellent".split(" "));
+function tailorKeywords(jd,max){
+  const isStop=w=>STOP.has(w)||T_EXTRA.has(w)||/^\d+$/.test(w), score=new Map(), first=new Map(); let n=0;
+  const add=(k,v)=>{ k=k.trim(); if(!k) return; score.set(k,(score.get(k)||0)+v); if(!first.has(k)) first.set(k,n++); };
+  String(jd).split(/[\n.,;:()!?\/]+/).forEach(ph=>{
+    const words=ph.match(/[A-Za-z0-9][A-Za-z0-9+#&'-]*/g)||[]; let run=[];
+    const flush=()=>{ if(run.length&&run.length<=4) add(run.join(" ").toLowerCase(),3); run=[]; };
+    words.forEach(w=>{ if((/^[A-Z]/.test(w)||/^[A-Z0-9+#]{2,}$/.test(w))&&!isStop(w.toLowerCase())) run.push(w); else flush(); }); flush();
+    const t=tokens(ph);
+    for(let i=0;i<t.length-1;i++) if(!isStop(t[i])&&!isStop(t[i+1])&&t[i].length>1&&t[i+1].length>1) add(t[i]+" "+t[i+1],2);
+    t.forEach(w=>{ if(!isStop(w)&&(w.length>=4||SHORT_OK.has(w))) add(w,1); });
+  });
+  const multi=[...score.keys()].filter(k=>k.includes(" "));
+  const keep=[...score.entries()].filter(([k,v])=>k.includes(" ")||v>=3||!multi.some(m=>m.split(" ").includes(k)))
+    .sort((a,b)=>(b[1]-a[1])||(first.get(a[0])-first.get(b[0]))).map(([k])=>k);
+  const seen=new Set(), out=[];
+  keep.filter(k=>!/^\d/.test(k)).forEach(k=>{ const st=tokens(k).map(stem).join(" "); if(!seen.has(st)){ seen.add(st); out.push(k); } });
+  return out.slice(0,max||25);
+}
+function mapKeywords(master,jd){
+  const kws=tailorKeywords(jd,25), parts=splitReqs(jd);
+  return kws.map(k=>{
+    const status=exactHit(master,k)?"Strong":(hasTerm(master,k)||synHit(master,k))?"Reword":"Gap";
+    const tier=(hasTerm(parts.nice,k)&&!hasTerm(parts.must,k))?"Nice-to-have":"Must-have";
+    return {k,status,tier};
+  });
+}
+function lineScore(line,kws){ return kws.reduce((a,m)=>a+(m.status!=="Gap"&&(hasTerm(line,m.k)||(m.status==="Reword"&&synHit(line,m.k)))?(m.tier==="Must-have"?2:1):0),0); }
+function isBullet(l){ return /^\s*([-•*▪●]|\d+\.)\s+/.test(l); }
+function reorderMaster(master,map){
+  const lines=String(master).split(/\r?\n/), out=[]; let block=[];
+  const flush=()=>{ if(!block.length) return; block.map((l,i)=>({l,i,s:lineScore(l,map)})).sort((a,b)=>(b.s-a.s)||(a.i-b.i)).forEach(x=>out.push(x.l)); block=[]; };
+  lines.forEach(l=>{ if(isBullet(l)) block.push(l); else { flush(); out.push(l); } });
+  flush(); return out.join("\n");
+}
+function newFacts(master,tailored){
+  const m=" "+String(master).toLowerCase()+" ";
+  const nums=[...new Set((String(tailored).match(/\$?\d[\d,.]*\s?%?\+?/g)||[]).map(s=>s.trim()).filter(s=>s.replace(/[^\d]/g,"").length>=2))].filter(n=>!m.includes(n.toLowerCase()));
+  const names=[...new Set((String(tailored).match(/\b[A-Z][A-Za-z0-9&.+-]{2,}(?:[ \t][A-Z][A-Za-z0-9&.+-]{2,})*\b/g)||[]))].filter(n=>!m.includes(n.toLowerCase())&&!STOP.has(n.toLowerCase()));
+  return {nums,names:names.slice(0,25)};
+}
+function tailorPrompt(master,jd,map,company,title){
+  const g=s=>map.filter(x=>x.status===s).map(x=>x.k+" ("+x.tier+")").join(", ")||"none";
+  return "You are tailoring my résumé to a job description for ATS and recruiters.\n\nGROUND RULES\n"+
+  "- The MASTER RÉSUMÉ below is the single source of truth. Never invent employers, titles, dates, metrics, certifications, tools, or scope. You may reorder, re-emphasize, condense, and reword using the job's terminology only where the master supports it.\n"+
+  "- If the job requires something the master doesn't show, list it as a GAP question for me. Never add it silently.\n"+
+  "- US English. Keep the heading structure. ATS-safe: standard section names (Professional Summary, Core Competencies, Professional Experience, Independent Projects & Industry Collaboration, Education & Certifications, Technical Skills), no tables or text boxes, nothing important in headers or footers, and spell out acronyms once (e.g., \"Vendor Management System (VMS)\").\n"+
+  "- Target length: 2 pages.\n\n"+
+  "KEYWORD MAP (already computed)\n- Strong (already in the master): "+g("Strong")+"\n- Reword (supported under different wording): "+g("Reword")+"\n- Gap (not supported; ask me): "+g("Gap")+"\n\n"+
+  "TASK\n1. Retitle line 2 of the header toward "+(title?"\""+title+"\"":"the target title")+(company?" at "+company:"")+", staying truthful.\n"+
+  "2. Rewrite the Professional Summary so the job's top 3-5 priorities come first.\n"+
+  "3. Reorder and swap Core Competencies to mirror the job's language.\n"+
+  "4. Reorder bullets within each role so the most relevant come first; reword with the job's terms where accurate; condense or drop the least relevant to protect length.\n"+
+  "5. Keep, condense, or drop Independent Projects entries based on relevance.\n"+
+  "6. Reorder Technical Skills so the job's tools come first.\n\n"+
+  "OUTPUT\nA. The full tailored résumé in plain text with the same headings, bullets starting with \"- \".\nB. A short list: estimated must-have keyword coverage, the gap questions for me, and every change you made, each traced to a line in the master.\n\n"+
+  "JOB DESCRIPTION\n"+String(jd).slice(0,6000)+"\n\nMASTER RÉSUMÉ\n"+master;
+}
+let lastTailor=null;
+$("#t_job").onchange=e=>{ const j=S.jobs.find(x=>x.id===e.target.value); if(j){ $("#t_jd").value=j.jd||""; $("#t_company").value=j.company||""; $("#t_title").value=j.title||""; } };
+$("#t_useResume").onclick=()=>{ if(S.resume.text){ $("#t_master").value=S.resume.text; } else $("#t_msg").textContent="Tab 2 has no résumé saved yet."; };
+$("#t_masterFile").onchange=e=>{ const f=e.target.files[0]; if(f) f.text().then(t=>{ $("#t_master").value=t; }); e.target.value=""; };
+$("#t_run").onclick=()=>{
+  const master=$("#t_master").value, jd=$("#t_jd").value, company=$("#t_company").value.trim(), title=$("#t_title").value.trim();
+  if(master.trim().length<200){ $("#t_msg").textContent="Paste your full master résumé first."; return; }
+  if(jd.trim().length<80){ $("#t_msg").textContent="Paste the job description first."; return; }
+  S.master=master; save(); $("#t_msg").textContent="";
+  const map=mapKeywords(master,jd), must=map.filter(m=>m.tier==="Must-have");
+  const cov=must.length?must.filter(m=>m.status!=="Gap").length/must.length:0;
+  const draft=reorderMaster(master,map), fm=formatChecks(master);
+  const words=tokens(master).length;
+  lastTailor={master,jd,map,draft,company,title};
+  const badge=s=>s==="Strong"?'<span class="up">Strong</span>':s==="Reword"?'<span style="color:var(--warn);font-weight:600">Reword</span>':'<span class="down">Gap</span>';
+  const gaps=map.filter(m=>m.status==="Gap");
+  const yr=String(jd).match(/(\d{1,2})\s*\+?\s*(?:-|–|to)?\s*(?:\d{1,2})?\s*\+?\s*years?/i), myr=String(master).match(/(\d{1,2})\s*\+?\s*years/i);
+  const yrLine=yr?('<p class="muted">Experience asked for: <b>'+esc(yr[0])+'</b>'+(myr?' · your master shows <b>'+esc(myr[0])+'</b> '+(+myr[1]>=+yr[1]?'<span class="up">✓ meets it</span>':'<span class="down">below it</span>'):'')+'</p>'):'';
+  let h='<div class="card"><div class="row" style="gap:22px;align-items:flex-end">'+
+    '<div><div class="muted">Must-have coverage</div><div class="big">'+pct(cov)+'</div></div>'+
+    '<div><div class="muted">ATS readiness</div><div class="big">'+Math.round((0.7*cov+0.3*fm.score)*100)+'<span class="muted" style="font-size:15px">/100</span></div></div>'+
+    '<div><div class="muted">Length</div><div class="big">'+words+'</div><div class="muted">words'+(words>1100?' · trim toward 2 pages':'')+'</div></div></div>'+
+    '<h3 style="margin-top:14px">Keyword map</h3><div class="tablewrap"><table><tr><th>Job keyword</th><th>Tier</th><th>In your master?</th></tr>'+
+    map.map(m=>'<tr><td>'+esc(m.k)+'</td><td>'+m.tier+'</td><td>'+badge(m.status)+'</td></tr>').join("")+'</table></div>'+
+    yrLine+'<p class="muted">Strong = already in your master. Reword = your master supports it under different wording. Gap = not supported.</p></div>';
+  h+='<div class="card"><h3>Gap questions for you</h3>'+(gaps.length?'<ul>'+gaps.map(m=>'<li>Do you have real experience with <b>'+esc(m.k)+'</b>? If yes, add it to your master first; if not, leave it out.</li>').join("")+'</ul>':'<p class="muted">No gaps. Every job keyword is backed by your master.</p>')+'</div>';
+  h+='<div class="card"><h3>Reordered draft <span class="muted">(same facts and words; best-matching bullets first)</span></h3>'+
+    '<textarea id="t_draft" style="min-height:240px">'+esc(draft)+'</textarea>'+
+    '<div class="row" style="margin-top:8px"><button class="btn ghost small" id="t_copyDraft" type="button">📋 Copy draft</button><button class="btn ghost small" id="t_dlDraft" type="button">💾 Download .txt</button></div></div>';
+  h+='<div class="card"><h3>Reword it with a free AI</h3><p class="muted">Copy this prompt into Microsoft 365 Copilot, Claude, or any free chat assistant. It carries your ground rules, the keyword map and your master résumé.</p>'+
+    '<pre class="prompt" id="t_prompt"></pre><div class="row" style="margin:8px 0"><button class="btn ghost small" id="t_copyPrompt" type="button">📋 Copy prompt</button></div>'+
+    '<label>Paste the AI\'s tailored résumé back here for a fact check and final ATS score</label><textarea id="t_back" style="min-height:160px"></textarea>'+
+    '<div class="row" style="margin-top:8px"><button class="btn" id="t_check" type="button">Check it</button></div><div id="t_checkOut"></div></div>';
+  $("#t_out").innerHTML=h;
+  $("#t_prompt").textContent=tailorPrompt(master,jd,map,company,title);
+  $("#t_copyDraft").onclick=()=>copy($("#t_draft").value,$("#t_copyDraft"));
+  $("#t_copyPrompt").onclick=()=>copy($("#t_prompt").textContent,$("#t_copyPrompt"));
+  $("#t_dlDraft").onclick=()=>{ const n=("Resume_"+(company||"Tailored")+"_"+(title||"")).replace(/[^A-Za-z0-9]+/g,"_").replace(/_+$/,""); const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([$("#t_draft").value],{type:"text/plain"})); a.download=n+".txt"; a.click(); };
+  $("#t_check").onclick=checkTailored;
+};
+function checkTailored(){
+  if(!lastTailor) return; const t=$("#t_back").value;
+  if(t.trim().length<200){ $("#t_checkOut").innerHTML='<p class="muted">Paste the full tailored résumé first.</p>'; return; }
+  const must=lastTailor.map.filter(m=>m.tier==="Must-have");
+  const before=must.length?must.filter(m=>m.status==="Strong").length/must.length:0;
+  const after=must.length?must.filter(m=>exactHit(t,m.k)).length/must.length:0;
+  const fm=formatChecks(t), nf=newFacts(lastTailor.master,t);
+  const added=lastTailor.map.filter(m=>m.status==="Gap"&&exactHit(t,m.k));
+  let h='<div class="kpis" style="margin-top:12px"><div class="kpi"><div class="v">'+pct(before)+' → '+pct(after)+'</div><div class="l">Must-have keywords in exact job wording</div></div>'+
+    '<div class="kpi"><div class="v">'+Math.round((0.7*after+0.3*fm.score)*100)+'</div><div class="l">Final ATS readiness /100</div></div>'+
+    '<div class="kpi"><div class="v">'+tokens(t).length+'</div><div class="l">Words</div></div></div>';
+  if(added.length||nf.nums.length||nf.names.length){
+    h+='<div class="note"><b>Fact check: confirm these before you send it.</b> They are in the tailored version but not in your master.'+
+      (added.length?'<br>Gap keywords now claimed: '+added.map(m=>'<b>'+esc(m.k)+'</b>').join(", "):'')+
+      (nf.nums.length?'<br>New numbers: '+nf.nums.map(esc).join(", "):'')+
+      (nf.names.length?'<br>New names or terms: '+nf.names.map(esc).join(", "):'')+'</div>';
+  } else h+='<p class="up">✓ No new numbers, names or gap keywords. Everything traces to your master.</p>';
+  h+='<table>'+fm.checks.map(c=>'<tr><td style="width:24px">'+(c.ok?'<span class="up">✓</span>':'<span class="down">✗</span>')+'</td><td>'+esc(c.l)+'</td></tr>').join("")+'</table>';
+  $("#t_checkOut").innerHTML=h;
+}
+
 /* ================= RENDER: JOBS ================= */
 const JF=["company","title","location","salary","source","url","jd"];
 function clearJobForm(){ $("#j_id").value=""; JF.forEach(f=>$("#j_"+f).value=""); $("#j_culture").value=3; $("#j_trajectory").value=3; $("#j_referral").checked=false; $("#jobFormTitle").textContent="Add a job"; }
@@ -680,7 +859,7 @@ $("#importData").onchange=e=>{
   const f=e.target.files[0]; if(!f) return;
   f.text().then(t=>{ const d=JSON.parse(t); if(!d||d.schemaVersion!==1||!Array.isArray(d.jobs)) throw new Error("bad");
     if(!confirm("Replace your current Job Coach data with this backup?")) return;
-    delete d.exportedAt; S=Object.assign(blank(),d); save(); loadProfile(); $("#r_text").value=S.resume.text||""; $("#dataMsg").textContent="✓ Restored "+S.jobs.length+" jobs."; renderAll();
+    delete d.exportedAt; S=Object.assign(blank(),d); save(); loadProfile(); $("#r_text").value=S.resume.text||""; $("#t_master").value=S.master||S.resume.text||""; $("#dataMsg").textContent="✓ Restored "+S.jobs.length+" jobs."; renderAll();
   }).catch(()=>{ $("#dataMsg").textContent="That file isn't a Job Coach backup."; });
   e.target.value="";
 };
@@ -704,9 +883,10 @@ document.addEventListener("change",e=>{
 function renderAll(){
   jobOptions($("#r_job"),"Paste a JD below, or pick a saved job…");
   jobOptions($("#pr_job"),"Pick a saved job…");
+  jobOptions($("#t_job"),"Paste a JD below, or pick a saved job…");
   renderJobs(); renderApps(); renderStudio(); renderInsights();
 }
-loadProfile(); $("#r_text").value=S.resume.text||"";
+loadProfile(); $("#r_text").value=S.resume.text||""; $("#t_master").value=S.master||S.resume.text||"";
 (()=>{ const t=lsGet("jobcoach_tab"); if(t&&$("#s-"+t)) showTab(t); else renderAll(); })();
 </script>
 </body>
