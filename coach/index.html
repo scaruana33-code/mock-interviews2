@@ -102,6 +102,7 @@ footer{max-width:1040px;margin:0 auto;padding:8px 16px 32px;color:var(--quiet);f
   <button data-t="resume">2 · Résumé</button>
   <button data-t="tailor">✂️ Tailor</button>
   <button data-t="jobs">3 · Job fit</button>
+  <button data-t="top10">📦 Top 10 packet</button>
   <button data-t="apps">4 · Applications &amp; odds</button>
   <button data-t="practice">5 · Practice</button>
   <button data-t="insights">6 · Learning loop</button>
@@ -116,6 +117,8 @@ footer{max-width:1040px;margin:0 auto;padding:8px 16px 32px;color:var(--quiet);f
   <div class="card">
     <div class="grid2">
       <div><label>Full name</label><input id="p_fullName"></div>
+      <div><label>Email <span class="hint">(for cover-note sign-off)</span></label><input id="p_email" type="email"></div>
+      <div><label>Phone</label><input id="p_phone" type="tel"></div>
       <div><label>Target role</label><input id="p_targetRole" placeholder="e.g. Program Manager, Vendor Management"></div>
       <div><label>Industry</label><input id="p_industry" placeholder="e.g. Insurance, HR tech"></div>
       <div><label>Home location</label><input id="p_location" placeholder="e.g. Brooklyn, NY"></div>
@@ -202,6 +205,47 @@ footer{max-width:1040px;margin:0 auto;padding:8px 16px 32px;color:var(--quiet);f
     <div class="row" style="margin-top:10px"><button class="btn" id="saveJob" type="button">Save job</button><button class="btn ghost" id="clearJob" type="button">Clear</button></div>
   </div>
   <div id="jobList"></div>
+</section>
+
+<!-- ============ TOP 10 PACKET ============ -->
+<section id="s-top10">
+  <h2>Top 10 jobs packet</h2>
+  <p class="lead">Find current openings, rank the 10 that fit you best, and get a tailored résumé and a ready-to-send cover note for each, bundled into one application packet you can save as a PDF.</p>
+  <div class="card">
+    <h3>Step 1 · Find current openings <span class="muted">(free AI with web search)</span></h3>
+    <div class="grid2">
+      <div><label>Target titles <span class="hint">(one per line)</span></label><textarea id="k_titles" style="min-height:90px" placeholder="Contingent Workforce Program Manager&#10;VMS / MSP Program Manager&#10;Procurement Systems Manager"></textarea></div>
+      <div><label>Where you'll work</label><textarea id="k_where" style="min-height:90px" placeholder="e.g. New York City, remote, hybrid, or open to relocation"></textarea></div>
+    </div>
+    <div class="row" style="margin:10px 0"><button class="btn ghost small" id="k_copyFind" type="button">📋 Copy search prompt</button><span class="muted">Paste it into Microsoft 365 Copilot or another free assistant that can search the web, then paste its JSON reply below.</span></div>
+    <pre class="prompt" id="k_findPrompt"></pre>
+    <textarea id="k_findJson" style="min-height:90px;margin-top:8px" placeholder='{"openings":[{"title":"…","company":"…"}],"excluded":[]}'></textarea>
+    <div class="row" style="margin-top:8px"><button class="btn" id="k_import" type="button">Import openings</button><span class="muted" id="k_importMsg"></span></div>
+    <p class="muted">You can also add jobs by hand in the Job fit tab. Every saved job you haven't applied to yet is a candidate.</p>
+  </div>
+  <div class="card">
+    <h3>Step 2 · Your top 10</h3>
+    <div id="k_list"></div>
+    <div id="k_excl"></div>
+  </div>
+  <div class="card">
+    <h3>Step 3 · Polish with a free AI <span class="muted">(optional, one job at a time)</span></h3>
+    <p class="muted">Rose already drafts a reordered résumé and a cover note for every job using only your master résumé. For smoother wording, copy a job's prompt, then paste the AI's JSON reply here. Replies for several jobs can go in at once.</p>
+    <div class="row"><select id="k_aiJob" style="max-width:420px"></select><button class="btn ghost small" id="k_copyAi" type="button">📋 Copy prompt for this job</button></div>
+    <pre class="prompt" id="k_aiPrompt" style="margin-top:8px"></pre>
+    <textarea id="k_aiJson" style="min-height:90px;margin-top:8px" placeholder='{"id":"…","why":["…"],"flag":"…","cover":"…","resume":"…"}'></textarea>
+    <div class="row" style="margin-top:8px"><button class="btn" id="k_applyAi" type="button">Apply AI drafts</button><span class="muted" id="k_aiMsg"></span></div>
+  </div>
+  <div class="card">
+    <h3>Step 4 · Deliver the packet</h3>
+    <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="k_withResumes" checked> Include a tailored résumé for each role</label>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="k_open" type="button">📄 Open printable packet</button>
+      <button class="btn ghost" id="k_dlHtml" type="button">💾 Download packet (.html)</button>
+      <button class="btn ghost" id="k_dlCsv" type="button">📊 Download tracker (.csv)</button>
+    </div>
+    <p class="muted" id="k_packMsg">In the printable packet, use your browser's Print and choose Save as PDF. Your contact details come from the Profile tab and never leave this device.</p>
+  </div>
 </section>
 
 <!-- ============ APPLICATIONS ============ -->
@@ -472,7 +516,7 @@ function studioPrompt(job){
 }
 
 /* ================= RENDER: PROFILE ================= */
-const PF=["fullName","targetRole","industry","location","mobility","salaryMin","experienceYears","education","workStyle","interviewFormat","skills","dealBreakers","schedule","background"];
+const PF=["fullName","targetRole","industry","location","mobility","salaryMin","experienceYears","education","workStyle","interviewFormat","skills","dealBreakers","schedule","background","email","phone"];
 function loadProfile(){ PF.forEach(f=>{ const el=$("#p_"+f); if(el&&S.profile[f]!=null) el.value=S.profile[f]; }); }
 $("#saveProfile").onclick=()=>{ PF.forEach(f=>S.profile[f]=$("#p_"+f).value.trim()); save(); $("#profileMsg").textContent="✓ Saved. Rose has what she needs."; };
 
@@ -716,6 +760,170 @@ function logPred(job,gi,outcome,at){
   S.predLog.push({jobId:job.id,gate:gi,p:+gateProb(job,gi).toFixed(4),base:GATES[gi].base,outcome,at});
 }
 
+/* ================= TOP 10 PACKET ================= */
+const VERIFY={live:"Live on employer site",board:"Seen on a job board only",unverified:"Could not open",closed:"Closed or removed"};
+function normVerify(s){ s=String(s||"").toLowerCase(); if(/closed|removed|expired|filled/.test(s)) return "closed"; if(/could not|couldn't|not open|unverified|unable/.test(s)) return "unverified"; if(/board|indeed|linkedin|dice|zip|built ?in|only/.test(s)) return "board"; if(/live|employer|confirmed|verified|open/.test(s)) return "live"; return "unverified"; }
+function masterText(){ return S.master||S.resume.text||""; }
+function daysSince(d){ const t=Date.parse(d); return isNaN(t)?null:Math.floor((Date.now()-t)/864e5); }
+function top10(){
+  const excluded=[], ok=[];
+  S.jobs.forEach(j=>{
+    if(j.stage!=="saved") return excluded.push([j,"Already applied or in process ("+stageLabel(j.stage)+")"]);
+    if(j.verify==="closed") return excluded.push([j,"Posting closed or removed"]);
+    const age=daysSince(j.posted);
+    if(age!=null&&age>92&&j.verify!=="live") return excluded.push([j,"Stale posting (dated "+j.posted+") and not confirmed live"]);
+    ok.push(j);
+  });
+  const ranked=ok.map(j=>({j,fc:fitCard(j)})).sort((a,b)=>b.fc.fit-a.fc.fit);
+  const top=ranked.filter(x=>!x.j.kSkip).slice(0,10), skipped=ranked.filter(x=>x.j.kSkip);
+  return {top,ranked,excluded,skipped};
+}
+function findPrompt(){
+  const P=S.profile||{}, titles=$("#k_titles").value.trim()||P.targetRole||"[target titles]", where=$("#k_where").value.trim()||P.location||"[location preferences]";
+  const active=S.jobs.filter(j=>j.stage!=="saved").map(j=>"- "+j.title+" at "+j.company+" ("+stageLabel(j.stage)+")").join("\n")||"- none";
+  return "Find the CURRENT job openings that best match my background. Today is "+new Date().toISOString().slice(0,10)+".\n\n"+
+  "TARGET TITLES (include Director and Principal level):\n"+titles+"\n\nWHERE I'LL WORK: "+where+"\n\nMY BACKGROUND:\n"+(P.background||"")+"\nKey skills: "+(P.skills||"")+"\nYears of experience: "+(P.experienceYears||"?")+"\n\n"+
+  "MY RÉSUMÉ (excerpt):\n"+masterText().slice(0,3500)+"\n\n"+
+  "HOW TO SEARCH\n1. Run several searches: employer career sites, Built In, LinkedIn-indexed pages, Dice, and Workday / Greenhouse / Lever job pages.\n"+
+  "2. Verify each opening on the employer's own page where possible. Record exactly what you confirmed: \"live on employer page\", \"job board only\", or \"could not open\". Never present an unverified posting as confirmed; board dates are often stale.\n"+
+  "3. Leave out, and list with a reason: roles I already applied to or am interviewing for (below), closed or removed postings, postings older than about 3 months unless confirmed live, roles far below my level, roles that exclude my state, and pages that would not load.\n"+
+  "4. Return the 15 strongest candidates so I can rank them. Be honest about gaps.\n\n"+
+  "ALREADY APPLIED / IN PROCESS:\n"+active+"\n\n"+
+  "OUTPUT: ONLY valid JSON, no prose or code fences, in this shape:\n"+
+  "{\"openings\":[{\"title\":\"\",\"company\":\"\",\"location\":\"\",\"work_model\":\"remote|hybrid|onsite\",\"pay\":\"\",\"posted\":\"YYYY-MM-DD or empty\",\"status\":\"live on employer page|job board only|could not open\",\"url\":\"\",\"jd\":\"the key responsibilities and requirements, 120-250 words, in the posting's own wording\",\"why_fits\":\"one sentence\",\"gaps\":\"one sentence\"}],\"excluded\":[{\"opening\":\"Title — Company\",\"reason\":\"\"}]}";
+}
+function parseJsonLoose(raw){
+  raw=String(raw).trim().replace(/^```(json)?/i,"").replace(/```$/,"").trim();
+  const a=Math.min(...["{","["].map(c=>{ const i=raw.indexOf(c); return i<0?1e9:i; }));
+  if(a<1e9) raw=raw.slice(a);
+  return JSON.parse(raw);
+}
+$("#k_copyFind").onclick=()=>copy(findPrompt(),$("#k_copyFind"));
+["k_titles","k_where"].forEach(id=>$("#"+id).addEventListener("input",()=>{ S.k=S.k||{}; S.k[id]=$("#"+id).value; save(); $("#k_findPrompt").textContent=findPrompt(); }));
+$("#k_import").onclick=()=>{
+  let d; try{ d=parseJsonLoose($("#k_findJson").value); }catch(e){ $("#k_importMsg").textContent="That isn't valid JSON. Paste only the reply's JSON."; return; }
+  const list=Array.isArray(d)?d:(d.openings||[]); let added=0, updated=0;
+  list.forEach(o=>{
+    if(!o||!o.title||!o.company) return;
+    let host=""; try{ host=new URL(o.url).hostname.replace(/^www\./,""); }catch(e){}
+    const key=(o.company+"|"+o.title).toLowerCase();
+    let j=S.jobs.find(x=>(x.company+"|"+x.title).toLowerCase()===key);
+    const fields={company:String(o.company),title:String(o.title),location:[o.location,o.work_model].filter(Boolean).filter((v,i,a)=>!(i&&String(a[0]).toLowerCase().includes(String(v).toLowerCase()))).join(" · "),salary:String(o.pay||""),source:host,url:String(o.url||""),jd:String(o.jd||""),posted:String(o.posted||""),verify:normVerify(o.status),aiWhyFits:String(o.why_fits||""),aiGaps:String(o.gaps||"")};
+    if(j){ Object.assign(j,fields); updated++; }
+    else { S.jobs.push(Object.assign({id:uid(),stage:"saved",history:[{stage:"saved",at:new Date().toISOString()}],debriefs:[],studioCompanyId:"",culture:3,trajectory:3,referral:false,createdAt:new Date().toISOString()},fields)); added++; }
+  });
+  S.kExcluded=(d.excluded||[]).filter(x=>x&&x.opening).map(x=>({opening:String(x.opening),reason:String(x.reason||"")}));
+  save(); $("#k_importMsg").textContent="✓ "+added+" added, "+updated+" updated"+(S.kExcluded.length?", "+S.kExcluded.length+" left off by the search":"")+"."; renderTop10();
+};
+function packetItem(j,fc){
+  const master=masterText(), map=mapKeywords(master,j.jd||""), P=S.profile||{};
+  const must=map.filter(m=>m.tier==="Must-have"), gaps=must.filter(m=>m.status==="Gap").map(m=>m.k);
+  const jdCase=k=>{ const m=String(j.jd||"").match(new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"i")); return m?m[0]:k; };
+  const strong=must.filter(m=>m.status!=="Gap").map(m=>m.k).filter((k,i,a)=>!String(j.title).toLowerCase().includes(k)&&!a.some((o,x)=>x!==i&&o.length>k.length&&o.includes(k))).map(jdCase);
+  const bullets=String(master).split(/\r?\n/).filter(isBullet).filter(l=>l.trim().length>=90||(l.trim().length>=50&&/\d/.test(l))).map(l=>({l:l.replace(/^\s*([-•*▪●]|\d+\.)\s+/,""),s:lineScore(l,map)})).filter(b=>b.s>0).sort((a,b)=>b.s-a.s).slice(0,3);
+  const why=j.aiWhy&&j.aiWhy.length?j.aiWhy:bullets.map(b=>{ const kws=map.filter(m=>m.status!=="Gap"&&hasTerm(b.l,m.k)).map(m=>m.k).filter((k,i,a)=>!a.some((o,x)=>x!==i&&o.length>k.length&&o.includes(k))).slice(0,3).map(jdCase); return (kws.length?"They want "+kws.join(", ")+". ":"")+"Your record: "+(b.l.length>230?b.l.slice(0,227)+"…":b.l); });
+  const flags=[];
+  if(j.aiFlag) flags.push(j.aiFlag);
+  else {
+    if(j.verify&&j.verify!=="live") flags.push(VERIFY[j.verify]+". Check that it's open on the employer's site before applying.");
+    if(gaps.length) flags.push("Not shown in your résumé: "+gaps.slice(0,5).join(", ")+". Be ready to address it honestly; don't claim it.");
+    if(fc.sc.location<0.5) flags.push("Location or work model may not suit you ("+(j.location||"not stated")+"). Ask about flexibility early.");
+    if(fc.sc.salary<0.6&&nums(j.salary).length) flags.push("Posted pay ("+j.salary+") may be below your minimum. Confirm the range on the first call.");
+    if(fc.reqYears&&parseFloat(P.experienceYears)<fc.reqYears) flags.push("They ask for "+fc.reqYears+"+ years.");
+    if(j.aiGaps) flags.push(j.aiGaps);
+  }
+  const yrs=(String(master).match(/(\d{1,2})\s*\+\s*years/i)||[])[1];
+  const cover=j.aiCover||("Dear Hiring Team,\n\n"+j.company+" is looking for a "+j.title+". "+(strong.length?"The posting puts weight on "+(strong.length>1?strong.slice(0,3).slice(0,-1).join(", ")+" and "+strong.slice(0,3).slice(-1):strong[0])+", which is the core of my background"+(yrs?" over more than "+yrs+" years":"")+".":(yrs?"I've done this work for more than "+yrs+" years.":"That is the work I do."))+"\n\n"+
+    (bullets.length?"A few examples from my background:\n"+bullets.slice(0,2).map(b=>"- "+b.l).join("\n")+"\n\n":"")+
+    "I'd welcome the chance to bring that experience to "+j.company+".\n\nThank you for your consideration.\n"+(P.fullName||""));
+  const resume=j.aiResume||reorderMaster(master,map);
+  const label=fc.fit>=80?"strong match":fc.fit>=65?"good match":"stretch";
+  const note=j.aiFitNote||(label+(strong.length?"; matches "+strong.slice(0,3).join(", "):""));
+  return {j,fit:Math.round(fc.fit),note,why,flags,cover,resume,strong,gaps,polished:!!j.aiCover};
+}
+function renderTop10(){
+  if(!$("#k_list")) return;
+  S.k=S.k||{}; if(S.k.k_titles!=null&&!$("#k_titles").value) $("#k_titles").value=S.k.k_titles; if(S.k.k_where!=null&&!$("#k_where").value) $("#k_where").value=S.k.k_where;
+  if(!$("#k_titles").value&&S.profile.targetRole) $("#k_titles").value=S.profile.targetRole;
+  $("#k_findPrompt").textContent=findPrompt();
+  const t=top10();
+  if(!t.ranked.length) $("#k_list").innerHTML='<p class="empty">No candidate jobs yet. Import openings in Step 1, or add jobs in the Job fit tab.</p>';
+  else $("#k_list").innerHTML=(masterText().length<200?'<div class="note">Add your master résumé in the ✂️ Tailor tab (or tab 2) so Rose can tailor each résumé and cover note.</div>':'')+
+    '<div class="tablewrap"><table><tr><th>#</th><th>Role</th><th>Fit</th><th>Status</th><th>Drafts</th><th></th></tr>'+
+    t.ranked.map(x=>{ const inTop=t.top.includes(x), i=t.top.indexOf(x);
+      return '<tr'+(inTop?'':' style="opacity:.55"')+'><td>'+(inTop?i+1:'–')+'</td><td><b>'+esc(x.j.title)+'</b><br><span class="muted">'+esc(x.j.company)+(x.j.location?' · '+esc(x.j.location):'')+'</span></td><td><b>'+Math.round(x.fc.fit)+'</b>/100</td><td class="muted">'+esc(VERIFY[x.j.verify]||"Added by hand")+'</td><td class="muted">'+(x.j.aiCover?'AI-polished':'Rose draft')+'</td>'+
+      '<td><label class="muted" style="font-weight:400;display:flex;gap:4px;align-items:center;margin:0"><input type="checkbox" data-kskip="'+x.j.id+'"'+(x.j.kSkip?' checked':'')+'> leave out</label></td></tr>'; }).join("")+'</table></div>';
+  const ex=t.excluded.map(([j,r])=>[j.title+" — "+j.company,r]).concat((S.kExcluded||[]).map(x=>[x.opening,x.reason]));
+  $("#k_excl").innerHTML=ex.length?'<h3 style="margin-top:14px">Excluded or closed</h3><div class="tablewrap"><table><tr><th>Opening</th><th>Reason left off</th></tr>'+ex.map(([o,r])=>'<tr><td>'+esc(o)+'</td><td>'+esc(r)+'</td></tr>').join("")+'</table></div>':'';
+  const sel=$("#k_aiJob"), v=sel.value;
+  sel.innerHTML=t.top.map((x,i)=>'<option value="'+x.j.id+'">'+(i+1)+'. '+esc(x.j.title+" — "+x.j.company)+'</option>').join("")||'<option value="">No jobs in the top 10 yet</option>';
+  if(t.top.some(x=>x.j.id===v)) sel.value=v; renderAiPrompt();
+}
+function aiJobPrompt(j){
+  const master=masterText(), map=mapKeywords(master,j.jd||""), P=S.profile||{};
+  const g=s=>map.filter(x=>x.status===s).map(x=>x.k).join(", ")||"none";
+  return "Write a tailored résumé and a ready-to-send cover note for one job.\n\nGROUND RULES\n"+
+  "- My MASTER RÉSUMÉ below is the only source of facts. Never invent employers, titles, dates, metrics, certifications, tools, or scope. Reorder, re-emphasize, condense, and reword with the job's terms only where the master supports it.\n"+
+  "- Anything the job needs that the master doesn't show is a gap: mention it in \"flag\", never in the résumé or cover note.\n"+
+  "- Résumé: US English, ATS-safe standard headings, bullets starting with \"- \", spell out acronyms once, about 2 pages. Retitle header line 2 toward the job title truthfully; put the job's top priorities first in the summary; reorder competencies, bullets and technical skills by relevance.\n"+
+  "- Cover note: 3 or 4 short paragraphs built around this specific job, plain and direct, \"Dear Hiring Team,\" unless a hiring manager is named, end with \"Thank you for your consideration.\" and my name ("+(P.fullName||"[name]")+").\n\n"+
+  "KEYWORDS: Strong: "+g("Strong")+"\nReword: "+g("Reword")+"\nGap: "+g("Gap")+"\n\n"+
+  "JOB: "+j.title+" — "+j.company+(j.location?" ("+j.location+")":"")+"\n"+String(j.jd||"").slice(0,4000)+"\n\nMASTER RÉSUMÉ\n"+master+"\n\n"+
+  "OUTPUT: ONLY valid JSON, no prose or code fences:\n{\"id\":\""+j.id+"\",\"fit_note\":\"one short line on why this role fits\",\"why\":[\"3 bullets: what they want and where my résumé shows it\"],\"flag\":\"what to check or watch before applying\",\"cover\":\"the full cover note\",\"resume\":\"the full tailored résumé as plain text\"}";
+}
+function renderAiPrompt(){ const j=S.jobs.find(x=>x.id===$("#k_aiJob").value); $("#k_aiPrompt").textContent=j?aiJobPrompt(j):""; }
+$("#k_aiJob").onchange=renderAiPrompt;
+$("#k_copyAi").onclick=()=>copy($("#k_aiPrompt").textContent,$("#k_copyAi"));
+$("#k_applyAi").onclick=()=>{
+  let d; try{ d=parseJsonLoose($("#k_aiJson").value); }catch(e){ $("#k_aiMsg").textContent="That isn't valid JSON."; return; }
+  const arr=Array.isArray(d)?d:[d]; let n=0, warn=[];
+  arr.forEach(o=>{ const j=o&&S.jobs.find(x=>x.id===o.id); if(!j) return;
+    if(o.cover) j.aiCover=String(o.cover); if(o.resume) j.aiResume=String(o.resume);
+    if(Array.isArray(o.why)) j.aiWhy=o.why.map(String); if(o.flag) j.aiFlag=String(o.flag); if(o.fit_note) j.aiFitNote=String(o.fit_note);
+    const nf=newFacts(masterText(),(j.aiResume||"")+"\n"+(j.aiCover||""));
+    if(nf.nums.length) warn.push(j.company+": new numbers "+nf.nums.slice(0,5).join(", "));
+    n++; });
+  save(); $("#k_aiMsg").textContent=n?("✓ Applied to "+n+" job"+(n>1?"s":"")+"."+(warn.length?" Check before sending — not in your master: "+warn.join("; "):"")):"No matching job id found. Use the prompt from this tab.";
+  renderTop10();
+};
+function packetHtml(){
+  const t=top10(), P=S.profile||{}, items=t.top.map(x=>packetItem(x.j,x.fc)), withRes=$("#k_withResumes").checked;
+  const date=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+  const sign=[P.fullName,P.phone,P.email].filter(Boolean).join(" • ");
+  const nl=s=>esc(s).replace(/\n/g,"<br>");
+  let h='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Application Pack — '+esc(P.fullName||"")+'</title><style>'+
+    'body{font:11pt/1.45 Calibri,Arial,sans-serif;color:#1d1d1d;max-width:780px;margin:24px auto;padding:0 18px}h1{font-size:20pt;margin:0 0 4px;color:#1F3864}.sub{color:#555;margin-bottom:12px}'+
+    '.intro{border-left:3px solid #1F3864;padding:6px 12px;background:#f4f6fa;margin:12px 0 22px}h2{font-size:13.5pt;color:#1F3864;margin:26px 0 2px}.meta{color:#555;font-size:10pt}.fit{font-weight:bold;margin:6px 0}'+
+    'h3{font-size:11pt;margin:12px 0 4px}ul{margin:4px 0 4px 18px;padding:0}.flag{background:#fff6e5;border-left:3px solid #c98a00;padding:6px 10px}.cover{white-space:normal;border:1px solid #ddd;padding:10px 14px;border-radius:6px}'+
+    '.resume{white-space:pre-wrap;font-size:10pt;border-top:2px solid #1F3864;padding-top:10px}.pb{page-break-before:always;break-before:page}a{color:#1F3864}.foot{color:#777;font-size:9pt;margin-top:30px}'+
+    '@media print{body{margin:0 auto}.noprint{display:none}}</style></head><body>'+
+    '<p class="noprint" style="text-align:right"><button onclick="window.print()">Print / Save as PDF</button></p>'+
+    '<h1>Application Pack — '+esc(P.fullName||"")+'</h1><div class="sub">'+items.length+' tailored roles with fit ratings, match rationale, and ready-to-send cover notes'+(P.targetRole?' • Targeted to '+esc(P.targetRole)+' roles':'')+' • Prepared '+esc(date)+'</div>'+
+    '<div class="intro">Each role shows what was confirmed about the posting. Re-check anything not confirmed on the employer\'s own site before applying. Each cover note is built around that specific job description'+(sign?'. Sign off as: '+esc(sign):'')+'. Where a hiring manager\'s name is unknown, the note opens "Dear Hiring Team"; swap in the name if you find it.</div>';
+  items.forEach((it,i)=>{ const j=it.j;
+    h+='<h2>'+(i+1)+'. '+esc(j.title)+' — '+esc(j.company)+'</h2><div class="meta">'+[j.location,j.salary,j.url?'<a href="'+esc(j.url)+'">'+esc(j.source||j.url)+'</a>':esc(j.source||""),VERIFY[j.verify]].filter(Boolean).map(x=>x.startsWith("<a")?x:esc(x)).join(" • ")+'</div>'+
+      '<div class="fit">Fit: '+it.fit+'/100 — '+esc(it.note)+'</div>'+
+      '<h3>Why you\'re a strong match</h3><ul>'+it.why.map(w=>'<li>'+esc(w)+'</li>').join("")+'</ul>'+
+      (it.flags.length?'<h3>Flag before applying</h3><div class="flag">'+it.flags.map(esc).join("<br>")+'</div>':'')+
+      '<h3>Ready-to-send cover note</h3><div class="cover">'+nl(it.cover)+'</div>';
+  });
+  if(withRes) items.forEach((it,i)=>{ h+='<div class="pb"></div><h2>Tailored résumé '+(i+1)+' — '+esc(it.j.title)+', '+esc(it.j.company)+'</h2><div class="resume">'+esc(it.resume)+'</div>'; });
+  h+='<div class="foot">Prepared with Coach Rose Nylund\'s Job Coach. Drafts use only facts from your master résumé; review every page before sending.</div></body></html>';
+  return {h,count:items.length};
+}
+function fileStamp(){ return ((S.profile.fullName||"Application").replace(/[^A-Za-z0-9]+/g,"_"))+"_Application_Pack_"+new Date().toISOString().slice(0,10); }
+$("#k_open").onclick=()=>{ const p=packetHtml(); if(!p.count){ $("#k_packMsg").textContent="Your top 10 is empty. Import or add jobs first."; return; } const w=window.open(URL.createObjectURL(new Blob([p.h],{type:"text/html"})),"_blank"); if(!w) $("#k_packMsg").textContent="Your browser blocked the new tab. Use Download packet instead."; };
+$("#k_dlHtml").onclick=()=>{ const p=packetHtml(); if(!p.count){ $("#k_packMsg").textContent="Your top 10 is empty. Import or add jobs first."; return; } const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([p.h],{type:"text/html"})); a.download=fileStamp()+".html"; a.click(); };
+$("#k_dlCsv").onclick=()=>{
+  const t=top10(), q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
+  const rows=[["#","Title","Company","Location/work model","Pay","Posted/date seen","Status (what was confirmed)","Fit","Why it fits","Gaps/watch-outs","Link"]];
+  t.top.forEach((x,i)=>{ const it=packetItem(x.j,x.fc); rows.push([i+1,x.j.title,x.j.company,x.j.location,x.j.salary,x.j.posted||(x.j.createdAt||"").slice(0,10),VERIFY[x.j.verify]||"Added by hand",it.fit,x.j.aiWhyFits||it.note,it.flags.join(" "),x.j.url]); });
+  rows.push([],["Excluded or closed"],["Opening","Reason left off"]);
+  t.excluded.forEach(([j,r])=>rows.push([j.title+" — "+j.company,r])); (S.kExcluded||[]).forEach(x=>rows.push([x.opening,x.reason]));
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob(["﻿"+rows.map(r=>r.map(q).join(",")).join("\r\n")],{type:"text/csv"})); a.download=fileStamp().replace("Application_Pack","Job_Tracker")+".csv"; a.click();
+};
+document.addEventListener("change",e=>{ const id=e.target.dataset&&e.target.dataset.kskip; if(id){ const j=S.jobs.find(x=>x.id===id); if(j){ j.kSkip=e.target.checked; save(); renderTop10(); } } });
+
 /* ================= RENDER: APPLICATIONS ================= */
 function renderApps(){
   const apps=S.jobs.filter(j=>j.stage!=="saved");
@@ -884,6 +1092,7 @@ function renderAll(){
   jobOptions($("#r_job"),"Paste a JD below, or pick a saved job…");
   jobOptions($("#pr_job"),"Pick a saved job…");
   jobOptions($("#t_job"),"Paste a JD below, or pick a saved job…");
+  renderTop10();
   renderJobs(); renderApps(); renderStudio(); renderInsights();
 }
 loadProfile(); $("#r_text").value=S.resume.text||""; $("#t_master").value=S.master||S.resume.text||"";
