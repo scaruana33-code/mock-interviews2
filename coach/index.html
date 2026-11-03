@@ -106,6 +106,7 @@ footer{max-width:1040px;margin:0 auto;padding:8px 16px 32px;color:var(--quiet);f
   <button data-t="apps">4 · Applications &amp; odds</button>
   <button data-t="practice">5 · Practice</button>
   <button data-t="insights">6 · Learning loop</button>
+  <button data-t="admin">⚙️ Admin <span id="adm_navbadge"></span></button>
   <button data-t="data">Data</button>
 </div></nav>
 
@@ -274,6 +275,22 @@ footer{max-width:1040px;margin:0 auto;padding:8px 16px 32px;color:var(--quiet);f
       <div class="row" style="margin-top:8px"><button class="btn" id="pr_send" type="button">Send to Studio</button><span class="muted" id="pr_msg"></span></div>
     </div>
   </div>
+  <div class="card" id="wx_card">
+    <h3>🌦️ Interview day: weather &amp; what to wear</h3>
+    <p class="muted" style="margin-top:0">Set where and when the interview is. Rose pulls the forecast for that hour and tells you what to wear: suit weight, topcoat, tie, umbrella or not. Forecasts reach about 16 days out, so recheck the night before.</p>
+    <div class="grid2">
+      <div><label>Interview for</label><select id="wx_job"><option value="">Pick a saved job (optional)…</option></select></div>
+      <div><label>Format</label><select id="wx_format"><option value="inperson">In person</option><option value="video">Video call</option></select></div>
+      <div><label>Location <span class="hint">(city, state)</span></label><input id="wx_loc" placeholder="e.g. Hartford, CT"></div>
+      <div><label>Date &amp; start time <span class="hint">(local to the interview)</span></label><input id="wx_when" type="datetime-local"></div>
+      <div><label>Dress code</label><select id="wx_dress">
+        <option value="formal">Business formal (suit and tie)</option><option value="business">Business professional (suit, tie optional)</option>
+        <option value="casual">Business casual</option><option value="creative">Smart casual / creative</option></select></div>
+      <div><label>Getting there</label><select id="wx_travel"><option value="transit">Subway, bus or walking</option><option value="car">Driving or rideshare</option></select></div>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="wx_run" type="button">Check weather &amp; outfit</button><span class="muted" id="wx_msg"></span></div>
+    <div id="wx_out"></div>
+  </div>
   <div class="card">
     <h3>Practice so far <span class="muted">(read from the Studio on this device)</span></h3>
     <div id="studioStats"></div>
@@ -287,6 +304,72 @@ footer{max-width:1040px;margin:0 auto;padding:8px 16px 32px;color:var(--quiet);f
   <div id="insights"></div>
 </section>
 
+<!-- ============ ADMIN ============ -->
+<section id="s-admin">
+  <h2>Admin</h2>
+  <p class="lead">Import résumés straight into the parser and job match, and build workflows with approval steps, conditions and auto-notifications.</p>
+  <div class="row" id="adm_sub" style="margin-bottom:12px">
+    <button class="btn small" data-adm="import" type="button">📥 Import</button>
+    <button class="btn ghost small" data-adm="workflows" type="button">🔀 Workflows</button>
+    <button class="btn ghost small" data-adm="templates" type="button">✉️ Notification templates</button>
+    <button class="btn ghost small" data-adm="recipients" type="button">👥 Recipients</button>
+    <button class="btn ghost small" data-adm="inbox" type="button">✅ Approvals &amp; outbox <span id="adm_badge"></span></button>
+  </div>
+
+  <div class="admp" id="adm-import">
+    <div class="card">
+      <h3>Import a résumé</h3>
+      <p class="muted" style="margin-top:0">Upload a .docx, .pdf, .txt or .md file, or paste the text. Rose extracts the text, parses it, and re-scores every saved job against it.</p>
+      <div class="row"><label class="btn ghost small" style="margin:0">📂 Choose file<input type="file" id="im_file" accept=".docx,.pdf,.txt,.md,.rtf,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none"></label><span class="muted" id="im_fileName">No file chosen</span></div>
+      <div style="margin-top:10px"><label>Résumé text <span class="hint">(filled from the file, or paste here)</span></label><textarea id="im_text" style="min-height:180px"></textarea></div>
+      <div class="signals" style="margin-top:10px">
+        <label><input type="checkbox" id="im_toResume" checked> <span>Send to Résumé check (tab 2) and Job match scoring</span></label>
+        <label><input type="checkbox" id="im_toMaster" checked> <span>Use as master résumé for Tailor and Top 10</span></label>
+        <label><input type="checkbox" id="im_toProfile" checked> <span>Fill empty Profile fields (name, email, phone, skills)</span></label>
+      </div>
+      <div class="row" style="margin-top:10px"><button class="btn" id="im_run" type="button">Import &amp; parse</button><span class="muted" id="im_msg"></span></div>
+    </div>
+    <div id="im_out"></div>
+    <div id="im_hist"></div>
+  </div>
+
+  <div class="admp" id="adm-workflows" style="display:none">
+    <div class="note">This app runs in your browser with no mail server. When a workflow sends a notification, Rose drafts it into the <b>Outbox</b> with the recipients filled in, and one click opens it in your email app. Approvals wait in the same place.</div>
+    <div id="wf_list"></div>
+    <div class="row"><button class="btn" id="wf_new" type="button">+ New workflow</button></div>
+    <div class="card" id="wf_editor" style="display:none;margin-top:14px"></div>
+  </div>
+
+  <div class="admp" id="adm-templates" style="display:none">
+    <div class="card">
+      <h3 id="tp_formTitle">New template</h3>
+      <input type="hidden" id="tp_id">
+      <div><label>Template name</label><input id="tp_name" placeholder="e.g. Interview scheduled"></div>
+      <div style="margin-top:8px"><label>Subject</label><input id="tp_subject" placeholder="Interview set: {{title}} at {{company}}"></div>
+      <div style="margin-top:8px"><label>Body</label><textarea id="tp_body"></textarea></div>
+      <p class="muted">Placeholders: <span id="tp_vars"></span></p>
+      <div class="row"><button class="btn" id="tp_save" type="button">Save template</button><button class="btn ghost" id="tp_clear" type="button">Clear</button><span class="muted" id="tp_msg"></span></div>
+    </div>
+    <div id="tp_list"></div>
+  </div>
+
+  <div class="admp" id="adm-recipients" style="display:none">
+    <div class="card">
+      <h3>Who gets the auto-notification emails</h3>
+      <p class="muted" style="margin-top:0">Add or remove people any time. Pause someone to stop their emails without deleting them, and tick which notifications each person receives.</p>
+      <div class="grid2"><div><label>Name</label><input id="rc_name" placeholder="e.g. Pat Recruiter"></div><div><label>Email</label><input id="rc_email" type="email" placeholder="pat@example.com"></div></div>
+      <div class="row" style="margin-top:10px"><button class="btn" id="rc_add" type="button">+ Add recipient</button><span class="muted" id="rc_msg"></span></div>
+    </div>
+    <div id="rc_list"></div>
+  </div>
+
+  <div class="admp" id="adm-inbox" style="display:none">
+    <div class="card"><h3>Waiting for approval</h3><div id="ib_approvals"></div></div>
+    <div class="card"><h3>Outbox</h3><div id="ib_outbox"></div></div>
+    <div class="card"><h3>Workflow runs</h3><div id="ib_runs"></div></div>
+  </div>
+</section>
+
 <!-- ============ DATA ============ -->
 <section id="s-data">
   <h2>Your data</h2>
@@ -297,7 +380,7 @@ footer{max-width:1040px;margin:0 auto;padding:8px 16px 32px;color:var(--quiet);f
       <label class="btn ghost" style="margin:0">📂 Restore from backup<input type="file" id="importData" accept="application/json,.json" style="display:none"></label>
       <button class="btn danger" id="resetData" type="button">Clear all Job Coach data</button>
     </div>
-    <p class="muted" id="dataMsg" style="margin-top:10px">The backup uses schemaVersion 1 records: profile, résumé, master résumé for tailoring, jobs (each with its applications stage, debriefs and Studio link) and the prediction log. Studio practice data stays in the Studio's own backup.</p>
+    <p class="muted" id="dataMsg" style="margin-top:10px">The backup uses schemaVersion 1 records: profile, résumé, master résumé for tailoring, jobs (each with its applications stage, debriefs and Studio link) and the prediction log. Admin settings (workflows, templates, recipients, approvals and outbox) are included too. Studio practice data stays in the Studio's own backup.</p>
   </div>
 </section>
 </main>
@@ -322,7 +405,7 @@ footer{max-width:1040px;margin:0 auto;padding:8px 16px 32px;color:var(--quiet);f
 const KEY="jobcoach_v1";
 const STUDIO_CKEY="rose_companies_v2", STUDIO_SKEY="rose_store_";
 const STUDIO_BUILTIN={amazon:"Amazon",mindlance:"Mindlance",hartford:"The Hartford",nmrotr:"No More Reports on the Run"};
-function blank(){ return {schemaVersion:1,profile:{},resume:{text:""},jobs:[],predLog:[]}; }
+function blank(){ return {schemaVersion:1,profile:{},resume:{text:""},jobs:[],predLog:[],admin:null}; }
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ return false; } }
 let S=(()=>{ try{ const d=JSON.parse(lsGet(KEY)||"null"); if(d&&d.schemaVersion===1) return Object.assign(blank(),d); }catch(e){} return blank(); })();
@@ -717,9 +800,11 @@ $("#clearJob").onclick=clearJobForm;
 $("#saveJob").onclick=()=>{
   const id=$("#j_id").value; let j=id?S.jobs.find(x=>x.id===id):null;
   if(!$("#j_company").value.trim()||!$("#j_title").value.trim()){ alert("Add at least a company and a job title."); return; }
+  const isNew=!j;
   if(!j){ j={id:uid(),stage:"saved",history:[{stage:"saved",at:new Date().toISOString()}],debriefs:[],studioCompanyId:"",createdAt:new Date().toISOString()}; S.jobs.unshift(j); }
   JF.forEach(f=>j[f]=$("#j_"+f).value.trim()); j.culture=+$("#j_culture").value; j.trajectory=+$("#j_trajectory").value; j.referral=$("#j_referral").checked;
   save(); clearJobForm(); renderJobs();
+  if(isNew) wfFire("job_added",{job:j});
 };
 function editJob(id){ const j=S.jobs.find(x=>x.id===id); if(!j) return; $("#j_id").value=j.id; JF.forEach(f=>$("#j_"+f).value=j[f]||""); $("#j_culture").value=j.culture||3; $("#j_trajectory").value=j.trajectory||3; $("#j_referral").checked=!!j.referral; $("#jobFormTitle").textContent="Edit job"; window.scrollTo({top:0,behavior:"smooth"}); }
 function delJob(id){ if(!confirm("Delete this job and its application history?")) return; S.jobs=S.jobs.filter(x=>x.id!==id); S.predLog=S.predLog.filter(p=>p.jobId!==id); save(); renderAll(); }
@@ -754,6 +839,7 @@ function setStage(job,to){
     const gNew=gateIndex(to); S.predLog=S.predLog.filter(p=>!(p.jobId===job.id&&p.gate>=gNew));
   }
   job.stage=to; (job.history=job.history||[]).push({stage:to,at:now}); save();
+  wfFire("stage",{job,from,to});
 }
 function logPred(job,gi,outcome,at){
   S.predLog=S.predLog.filter(p=>!(p.jobId===job.id&&p.gate===gi));
@@ -991,6 +1077,7 @@ $("#dbSave").onclick=()=>{
   const d={id:uid(),round,at:new Date().toISOString(),signals,notes:$("#dbNotes").value.trim(),before,after:before,moves};
   j.debriefs.push(d); d.after=gateProb(j,gi);
   save(); closeDebrief(); renderApps();
+  wfFire("debrief",{job:j,round});
 };
 
 /* ================= PRACTICE ================= */
@@ -1073,6 +1160,510 @@ $("#importData").onchange=e=>{
 };
 $("#resetData").onclick=()=>{ if(!confirm("Clear all Job Coach data on this device? Your Studio practice is not affected.")) return; S=blank(); save(); location.reload(); };
 
+/* ================= INTERVIEW DAY: WEATHER & OUTFIT ================= */
+const US_STATES={AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",DC:"District of Columbia",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming"};
+function wmo(c){ return c==null?"–":c===0?"Clear":c<=2?"Partly cloudy":c===3?"Overcast":c<=48?"Fog":c<=57?"Drizzle":c<=67?"Rain":c<=77?"Snow":c<=82?"Rain showers":c<=86?"Snow showers":"Thunderstorms"; }
+const isSnow=c=>(c>=71&&c<=77)||c===85||c===86;
+const isStorm=c=>c>=95;
+function cleanLoc(s){ return String(s||"").replace(/\(.*?\)/g," ").replace(/\b(remote|hybrid|on-?site|in[- ]office)\b/ig," ").replace(/[|\/;].*$/,"").replace(/\s+/g," ").replace(/^[\s,–-]+|[\s,–-]+$/g,"").trim(); }
+async function geocode(q){
+  const parts=cleanLoc(q).split(",").map(x=>x.trim()).filter(Boolean);
+  if(!parts.length) throw new Error("Add the city where the interview is.");
+  const city=parts[0], second=(parts[1]||"").trim(), st=US_STATES[second.toUpperCase()]||(Object.values(US_STATES).find(n=>n.toLowerCase()===second.toLowerCase()));
+  let r; try{ r=await fetch("https://geocoding-api.open-meteo.com/v1/search?count=10&language=en&format=json&name="+encodeURIComponent(city)); }catch(e){ throw new Error("Couldn't reach the location lookup. Check your connection and try again."); }
+  if(!r.ok) throw new Error("The location lookup didn't answer. Try again in a minute.");
+  const res=((await r.json()).results)||[];
+  if(!res.length) throw new Error("Couldn't find \""+city+"\". Try just the city and state, e.g. Hartford, CT.");
+  let pick;
+  if(st) pick=res.find(x=>String(x.admin1||"").toLowerCase()===st.toLowerCase())||res.find(x=>x.country_code==="US");
+  else if(second){ const s2=second.toLowerCase(); pick=res.find(x=>[x.country,x.admin1,x.country_code].some(v=>String(v||"").toLowerCase()===s2)); }
+  pick=pick||res[0];
+  return {lat:pick.latitude,lon:pick.longitude,name:pick.name+(pick.admin1?", "+pick.admin1:"")+(pick.country_code&&pick.country_code!=="US"?", "+(pick.country||pick.country_code):"")};
+}
+function daysAhead(whenStr){ const d=new Date(whenStr.slice(0,10)+"T12:00:00"), t=new Date(); t.setHours(12,0,0,0); return Math.round((d-t)/864e5); }
+async function forecastFor(g,whenStr){
+  const day=whenStr.slice(0,10);
+  const u="https://api.open-meteo.com/v1/forecast?latitude="+g.lat+"&longitude="+g.lon+
+    "&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_gusts_10m"+
+    "&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto&start_date="+day+"&end_date="+day;
+  let r; try{ r=await fetch(u); }catch(e){ throw new Error("Couldn't reach the forecast service. Check your connection and try again."); }
+  if(!r.ok) throw new Error("The forecast service couldn't give a forecast for that date. Forecasts only reach about 16 days ahead.");
+  return r.json();
+}
+function wxSummary(d,whenStr){
+  const h=d.hourly||{}, times=h.time||[], day=whenStr.slice(0,10), hr=parseInt(whenStr.slice(11,13),10);
+  const ix=k=>times.indexOf(day+"T"+String(k).padStart(2,"0")+":00");
+  const at=ix(hr); if(at<0) throw new Error("The forecast didn't include that hour.");
+  // window: 2 hours before (travel) to 2 hours after the start
+  const win=[]; for(let k=Math.max(0,hr-2);k<=Math.min(23,hr+2);k++){ const i=ix(k); if(i>=0) win.push(i); }
+  const v=(k,i)=>(h[k]&&h[k][i]!=null)?h[k][i]:null;
+  const list=k=>win.map(i=>v(k,i)).filter(x=>x!=null);
+  const mn=a=>a.length?Math.min(...a):null, mx=a=>a.length?Math.max(...a):null;
+  return {temp:v("temperature_2m",at),feels:v("apparent_temperature",at),code:v("weather_code",at),wind:v("wind_speed_10m",at),
+    feelsMin:mn(list("apparent_temperature")),feelsMax:mx(list("apparent_temperature")),
+    pop:mx(list("precipitation_probability")),precip:list("precipitation").reduce((a,b)=>a+b,0),gust:mx(list("wind_gusts_10m")),
+    snow:win.some(i=>isSnow(v("weather_code",i))),storm:win.some(i=>isStorm(v("weather_code",i))),tz:d.timezone_abbreviation||d.timezone||""};
+}
+const DRESS={
+  formal:["👔","Business formal","Dark suit (navy or charcoal), white or light-blue dress shirt, a conservative silk tie, dark leather oxfords with a matching belt, dark dress socks."],
+  business:["👔","Business professional","Suit, or a blazer with dress trousers, and a collared dress shirt. A tie is optional; keep one in your bag in case everyone else is wearing one."],
+  casual:["🧥","Business casual","Blazer or sport coat over a collared shirt or fine-knit sweater, chinos or dress trousers, leather shoes or loafers. No tie needed."],
+  creative:["🧥","Smart casual","Clean, well-fitted pieces: dark chinos or dark jeans, a collared shirt or knit, an optional unstructured blazer, clean leather shoes or minimal leather sneakers."]
+};
+function outfitAdvice(w,o){
+  const out=[], tailored=o.dress==="formal"||o.dress==="business";
+  out.push(DRESS[o.dress]||DRESS.formal);
+  if(o.format==="video"){
+    out.push(["💻","On camera","Dress the top half exactly as you would in person"+(tailored?", jacket and tie included":"")+". Solid, mid-tone colours read best; skip thin stripes and small checks. Wear real trousers in case you have to stand up."]);
+    out.push(["💡","Setup","Face a window or lamp, camera at eye level, plain background. Test audio 15 minutes before."]);
+    return out;
+  }
+  const f=w.feelsMin!=null?w.feelsMin:w.feels, hot=w.feelsMax!=null?w.feelsMax:w.feels;
+  if(tailored){
+    if(f!=null&&f<=45) out.push(["🧵","Suit weight","Mid- to heavy-weight wool suit. Flannel or tweed textures are fine in the cold."]);
+    else if(hot!=null&&hot>=80) out.push(["🧵","Suit weight","Lightweight or tropical-weight wool, or a linen-blend if the company is relaxed. Carry the jacket on the way and put it on in the lobby."]);
+    else out.push(["🧵","Suit weight","Year-round (worsted) wool suit."]);
+  }
+  if(f==null) out.push(["🧥","Coat","No temperature in the forecast; bring a light topcoat to be safe."]);
+  else if(f<=32) out.push(["🧥","Coat: yes, a warm one","Knee-length wool overcoat, a scarf and leather gloves. A thin merino layer under the shirt keeps you warm without bulk."]);
+  else if(f<=45) out.push(["🧥","Coat: yes","Wool topcoat or overcoat over the "+(tailored?"suit":"outfit")+". A scarf is a good idea if it's windy."]);
+  else if(f<=58) out.push(["🧥","Coat: light","A light topcoat or trench coat is enough."]);
+  else if(hot!=null&&hot<=74) out.push(["🧥","Coat: no","The "+(tailored?"suit jacket":"blazer")+" is enough."]);
+  else out.push(["🧥","Coat: no","Skip the coat. Arrive 10 minutes early so you can cool down before you walk in."]);
+  const pop=w.pop||0, wet=pop>=60||w.precip>=0.04;
+  if(w.snow) out.push(["❄️","Snow expected","Wear boots with grip and carry your dress shoes in a bag; change in the lobby. Bring a compact umbrella."]);
+  if(wet) out.push(["☂️","Umbrella: yes","Rain is likely ("+Math.round(pop)+"% chance"+(w.precip>0?", about "+w.precip.toFixed(2)+" in. around your interview":"")+"). Take a full-size umbrella, a trench or raincoat, and water-resistant shoes or overshoes."]);
+  else if(pop>=30) out.push(["☂️","Umbrella: pack a compact one","Rain is possible ("+Math.round(pop)+"% chance)."]);
+  else if(!w.snow) out.push(["☂️","Umbrella: not needed","Only a "+Math.round(pop)+"% chance of rain."]);
+  if(w.storm) out.push(["⛈️","Thunderstorms","Storms are possible. Leave extra time and avoid waiting outside."]);
+  if(w.gust!=null&&w.gust>=25) out.push(["💨","Windy","Gusts up to "+Math.round(w.gust)+" mph. Compact umbrellas flip in that, so go sturdy, and bring a comb to fix your hair in the lobby."]);
+  if(hot!=null&&hot>=82) out.push(["🥵","Heat","Wear an undershirt to hide sweat and bring a handkerchief."]);
+  if(o.travel==="transit"&&(wet||w.snow||(f!=null&&f<=32))) out.push(["🚇","Travel","Add 15 minutes for the weather, and step inside somewhere to dry off and check the mirror before you go in."]);
+  else if(o.travel==="car") out.push(["🚗","Travel","Hang the jacket in the car so it doesn't crease, and check parking near the office in advance."]);
+  out.push(["⏱️","Timing","Arrive 10 to 15 minutes early and do a mirror check in the lobby."]);
+  return out;
+}
+function wxPrefill(j){
+  const iv=(j&&j.interview)||{};
+  $("#wx_loc").value=iv.loc||(j?cleanLoc(j.location):"")||"";
+  $("#wx_when").value=iv.when||"";
+  if(iv.format) $("#wx_format").value=iv.format;
+  if(iv.dress) $("#wx_dress").value=iv.dress;
+  if(iv.travel) $("#wx_travel").value=iv.travel;
+  $("#wx_out").innerHTML=""; $("#wx_msg").textContent="";
+}
+$("#wx_job").onchange=()=>wxPrefill(S.jobs.find(x=>x.id===$("#wx_job").value));
+let wxLast="";
+$("#wx_run").onclick=async()=>{
+  const o={loc:$("#wx_loc").value.trim(),when:$("#wx_when").value,format:$("#wx_format").value,dress:$("#wx_dress").value,travel:$("#wx_travel").value};
+  const j=S.jobs.find(x=>x.id===$("#wx_job").value);
+  if(!o.when){ $("#wx_msg").textContent="Set the interview date and start time."; return; }
+  if(j){ const had=j.interview&&j.interview.when; j.interview=o; save(); if(had!==o.when) wfFire("interview_set",{job:j}); }
+  const label=(j?j.title+" at "+j.company+" · ":"")+new Date(o.when).toLocaleString([], {weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+  if(o.format==="video"){
+    const adv=outfitAdvice({},o);
+    $("#wx_out").innerHTML=wxRender(label,null,null,adv); $("#wx_msg").textContent=""; return;
+  }
+  if(!o.loc){ $("#wx_msg").textContent="Add the city where the interview is."; return; }
+  const da=daysAhead(o.when);
+  if(da<0){ $("#wx_msg").textContent="That date has already passed."; return; }
+  if(da>15){ $("#wx_msg").textContent="That's "+da+" days out. Forecasts only reach about 16 days ahead, so check back closer to the day. Saved."; $("#wx_out").innerHTML=""; return; }
+  $("#wx_msg").textContent="Checking the forecast…"; $("#wx_run").disabled=true;
+  try{
+    const g=await geocode(o.loc), d=await forecastFor(g,o.when), w=wxSummary(d,o.when);
+    $("#wx_out").innerHTML=wxRender(label,g,w,outfitAdvice(w,o)); $("#wx_msg").textContent="";
+  }catch(e){ $("#wx_msg").textContent=e.message||"Something went wrong getting the forecast."; }
+  finally{ $("#wx_run").disabled=false; }
+};
+function wxRender(label,g,w,adv){
+  const r=x=>x==null?"–":Math.round(x);
+  let h='<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px"><h3>'+esc(label)+'</h3>';
+  if(w){
+    h+='<div class="muted">'+esc(g.name)+' · forecast for your start time'+(w.tz?' ('+esc(w.tz)+')':'')+'</div>'+
+      '<div class="kpis"><div class="kpi"><div class="v">'+r(w.temp)+'°F</div><div class="l">'+esc(wmo(w.code))+'</div></div>'+
+      '<div class="kpi"><div class="v">'+r(w.feels)+'°F</div><div class="l">Feels like (low '+r(w.feelsMin)+'° around your trip)</div></div>'+
+      '<div class="kpi"><div class="v">'+r(w.pop)+'%</div><div class="l">Chance of rain or snow</div></div>'+
+      '<div class="kpi"><div class="v">'+r(w.gust)+' mph</div><div class="l">Wind gusts</div></div></div>';
+  }
+  h+='<h3 style="margin-top:10px">What to wear</h3><table>'+adv.map(a=>'<tr><td style="width:28px;font-size:18px">'+a[0]+'</td><td><b>'+esc(a[1])+'</b><br>'+esc(a[2])+'</td></tr>').join("")+'</table>';
+  wxLast=label+(w?"\n"+g.name+": "+r(w.temp)+"°F, feels like "+r(w.feels)+"°F, "+wmo(w.code)+", "+r(w.pop)+"% chance of rain, gusts "+r(w.gust)+" mph":"")+"\n\n"+adv.map(a=>"• "+a[1]+": "+a[2]).join("\n");
+  h+='<div class="row" style="margin-top:10px"><button class="btn ghost small" id="wx_copy" type="button">📋 Copy outfit plan</button>'+(w?'<span class="muted">Forecast from Open-Meteo, fetched '+esc(new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}))+'. Forecasts change; recheck the night before.</span>':'')+'</div></div>';
+  setTimeout(()=>{ const b=$("#wx_copy"); if(b) b.onclick=()=>copy(wxLast,b); },0);
+  return h;
+}
+
+/* ================= ADMIN: STATE ================= */
+const TRIGGERS={stage:"An application moves to a stage",job_added:"A new job is saved",debrief:"An interview debrief is saved",interview_set:"An interview date is set (Interview prep)",resume_imported:"A résumé is imported"};
+const COND_FIELDS={fit:"Fit score (%)",stage:"Stage",salary:"Top posted salary",referral:"Has a referral",company:"Company",title:"Job title",location:"Location",source:"Source",daysToInterview:"Days until the interview"};
+const COND_OPS={gte:"is at least",lte:"is at most",eq:"equals",ne:"is not",contains:"contains",istrue:"is yes",isfalse:"is no"};
+const TPL_VARS=["candidate","company","title","stage","fromStage","fit","location","salary","url","interviewDate","workflow","trigger","approver","approvalComment","date"];
+function ensureAdmin(){
+  if(S.admin&&Array.isArray(S.admin.workflows)) return S.admin;
+  const t1=uid(), t2=uid(), t3=uid();
+  S.admin={
+    templates:[
+      {id:t1,name:"Interview scheduled",subject:"Interview set: {{title}} at {{company}}",body:"Hi,\n\n{{candidate}} has an interview for {{title}} at {{company}} on {{interviewDate}}.\nLocation: {{location}}\nCurrent fit score: {{fit}}%\n\nSent by the Job Coach workflow \"{{workflow}}\"."},
+      {id:t2,name:"Stage update",subject:"{{company}}: moved to {{stage}}",body:"Hi,\n\n{{candidate}}'s application for {{title}} at {{company}} moved from {{fromStage}} to {{stage}} on {{date}}.\nFit score: {{fit}}%\nPosting: {{url}}\n\nApproved by: {{approver}} {{approvalComment}}"},
+      {id:t3,name:"Offer received",subject:"Offer: {{title}} at {{company}}",body:"Good news: {{candidate}} received an offer for {{title}} at {{company}} ({{date}}).\nPosted salary: {{salary}}"}
+    ],
+    recipients:[],
+    workflows:[{id:uid(),name:"Final round: check fit, approve, notify",enabled:false,trigger:{type:"stage",value:"final"},steps:[
+      {id:uid(),type:"condition",field:"fit",op:"gte",value:"60",onFail:"stop"},
+      {id:uid(),type:"approval",approver:"",approverEmail:"",note:"Review before telling the team.",emailApprover:true},
+      {id:uid(),type:"notify",templateId:t2,recipients:[],extra:""}]}],
+    runs:[],outbox:[],imports:[]
+  };
+  return S.admin;
+}
+const A=()=>ensureAdmin();
+let admPanel=(()=>{ const p=lsGet("jobcoach_admtab"); return ["import","workflows","templates","recipients","inbox"].includes(p)?p:"import"; })();
+document.querySelectorAll("#adm_sub [data-adm]").forEach(b=>b.onclick=()=>{ admPanel=b.dataset.adm; lsSet("jobcoach_admtab",admPanel); renderAdmin(); });
+function renderAdmin(){
+  ensureAdmin();
+  document.querySelectorAll("#adm_sub [data-adm]").forEach(b=>b.classList.toggle("ghost",b.dataset.adm!==admPanel));
+  document.querySelectorAll(".admp").forEach(p=>p.style.display=p.id==="adm-"+admPanel?"block":"none");
+  const pend=A().runs.filter(r=>r.status==="waiting").length+A().outbox.filter(m=>!m.sent).length;
+  $("#adm_badge").innerHTML=pend?'<span class="pill">'+pend+'</span>':"";
+  $("#adm_navbadge").innerHTML=pend?'<span class="pill">'+pend+'</span>':"";
+  renderImportHist(); renderWfList(); renderTemplates(); renderRecipients(); renderInbox();
+}
+
+/* ================= ADMIN: IMPORT ================= */
+const SKILL_LEX=["vendor management","supplier management","contingent workforce","msp","vms","beeline","sap fieldglass","fieldglass","sap","workday","servicenow","salesforce","oracle","coupa","ariba","sql","excel","power bi","tableau","alteryx","python","r","vba","power automate","sharepoint","jira","confluence","smartsheet","asana","agile","scrum","kanban","waterfall","pmp","six sigma","lean","itil","prince2","procurement","sourcing","strategic sourcing","contract negotiation","contract management","statement of work","sow","budgeting","forecasting","financial analysis","p&l","stakeholder management","change management","risk management","compliance","audit","governance","supplier scorecards","kpi","sla","data analysis","reporting","dashboards","process improvement","program management","project management","operations","onboarding","talent acquisition","recruiting","hris","workforce planning","customer service","training","team leadership","cross-functional","vendor onboarding","rate cards","invoice reconciliation","spend analysis"];
+function loadScript(src){ return new Promise((ok,no)=>{ if(document.querySelector('script[src="'+src+'"]')) return ok(); const s=document.createElement("script"); s.src=src; s.onload=ok; s.onerror=()=>no(new Error("Couldn't load the file reader. Check your connection, or paste the text instead.")); document.head.appendChild(s); }); }
+async function readDocx(f){
+  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
+  const zip=await JSZip.loadAsync(await f.arrayBuffer()), doc=zip.file("word/document.xml");
+  if(!doc) throw new Error("That .docx has no document body.");
+  const xml=await doc.async("string");
+  return xml.replace(/<w:tab\/>/g,"\t").replace(/<w:br[^>]*\/>/g,"\n").replace(/<\/w:p>/g,"\n").replace(/<[^>]+>/g,"")
+    .replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,"&").replace(/\n{3,}/g,"\n\n").trim();
+}
+async function readPdf(f){
+  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise; let out="";
+  for(let i=1;i<=pdf.numPages;i++){ const c=await (await pdf.getPage(i)).getTextContent(); out+=c.items.map(it=>it.str+(it.hasEOL?"\n":" ")).join("")+"\n"; }
+  return out.replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+}
+$("#im_file").onchange=async e=>{
+  const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  $("#im_fileName").textContent=f.name; $("#im_msg").textContent="Reading "+f.name+"…";
+  try{
+    const n=f.name.toLowerCase(); let t;
+    if(n.endsWith(".docx")) t=await readDocx(f);
+    else if(n.endsWith(".pdf")) t=await readPdf(f);
+    else if(n.endsWith(".doc")) throw new Error("Old .doc files can't be read in the browser. Save it as .docx or PDF first.");
+    else { t=await f.text(); if(n.endsWith(".rtf")) t=t.replace(/\\par[d]?/g,"\n").replace(/\{\*?\\[^{}]+}|[{}]|\\[a-z]+-?\d* ?/gi,"").trim(); }
+    if(!t||t.trim().length<50) throw new Error("Couldn't find much text in that file. If it's a scanned image PDF, paste the text instead.");
+    $("#im_text").value=t; $("#im_text").dataset.file=f.name; $("#im_msg").textContent="✓ Read "+tokens(t).length+" words. Press Import & parse.";
+  }catch(err){ $("#im_msg").textContent=err.message; }
+};
+function parseResume(t){
+  const lines=String(t).split(/\n/).map(l=>l.trim()).filter(Boolean);
+  const email=(t.match(/[\w.+-]+@[\w-]+\.[\w.]+/)||[""])[0];
+  const phone=((t.match(/(\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/)||[""])[0]).trim();
+  const linkedin=(t.match(/(https?:\/\/)?(www\.)?linkedin\.com\/in\/[\w-]+\/?/i)||[""])[0];
+  const nameLine=lines.slice(0,4).find(l=>/^[A-Za-z][A-Za-z.'\- ]{2,40}$/.test(l)&&l.split(/\s+/).length>=2&&l.split(/\s+/).length<=4&&!/resume|curriculum|summary|profile/i.test(l));
+  const SECS={summary:/^(professional\s+)?(summary|profile|objective)\b/i,experience:/^(professional\s+|work\s+)?experience\b|^employment/i,education:/^education\b/i,skills:/^(core\s+|technical\s+|key\s+)?(skills|competencies|expertise)\b/i,certifications:/^(certifications?|licenses?)\b/i};
+  const found=Object.keys(SECS).filter(k=>lines.some(l=>l.length<50&&SECS[k].test(l)));
+  const low=" "+String(t).toLowerCase().replace(/[^a-z0-9+#&]+/g," ")+" ";
+  const skills=SKILL_LEX.filter(s=>low.includes(" "+s.replace(/[^a-z0-9+#&]+/g," ").trim()+" ")&&!(s==="fieldglass"&&low.includes(" sap fieldglass "))&&!(s==="sap"&&low.includes(" sap fieldglass ")));
+  // skills listed in a Skills section
+  const si=lines.findIndex(l=>l.length<50&&SECS.skills.test(l));
+  if(si>=0){ for(let i=si+1;i<lines.length&&i<si+8;i++){ if(Object.values(SECS).some(r=>r.test(lines[i])&&lines[i].length<50)) break;
+    lines[i].replace(/^[-•*▪●]\s*/,"").replace(/^[^:]{2,30}:\s*/,"").split(/[,|;•·]/).map(x=>x.trim()).filter(x=>x.length>1&&x.length<40&&x.split(" ").length<=4).forEach(x=>{ if(!skills.some(s=>s.toLowerCase()===x.toLowerCase())) skills.push(x); }); } }
+  const years=(t.match(/\b(19|20)\d{2}\b/g)||[]).map(Number);
+  const yrs=years.length?Math.max(0,Math.min(new Date().getFullYear(),Math.max(...years))-Math.min(...years)):null;
+  const edu=/\b(ph\.?d|doctorate)\b/i.test(t)?4:/\b(master|mba|m\.s\.|m\.a\.)\b/i.test(t)?3:/\b(bachelor|b\.s\.|b\.a\.|bsc)\b/i.test(t)?2:/\bassociate\b/i.test(t)?1:null;
+  return {name:nameLine||"",email,phone,linkedin,found,skills:skills.slice(0,40),yrs,edu,words:tokens(t).length};
+}
+$("#im_run").onclick=()=>{
+  const t=$("#im_text").value;
+  if(t.trim().length<100){ $("#im_msg").textContent="Choose a file or paste the full résumé first."; return; }
+  const before={}; S.jobs.forEach(j=>before[j.id]=fitCard(j).fit);
+  const p=parseResume(t), filled=[];
+  if($("#im_toResume").checked){ S.resume.text=t; $("#r_text").value=t; }
+  if($("#im_toMaster").checked){ S.master=t; $("#t_master").value=t; }
+  if($("#im_toProfile").checked){
+    const P=S.profile;
+    const fill=(k,v,l)=>{ if(v&&!(P[k]&&String(P[k]).trim())){ P[k]=String(v); filled.push(l); } };
+    fill("fullName",p.name,"name"); fill("email",p.email,"email"); fill("phone",p.phone,"phone");
+    fill("skills",p.skills.slice(0,15).join(", "),"skills");
+    if(p.edu!=null&&!P.education) { P.education=String(p.edu); filled.push("education"); }
+    loadProfile();
+  }
+  const src=$("#im_text").dataset.file||"Pasted text";
+  A().imports.unshift({at:new Date().toISOString(),source:src,words:p.words,skills:p.skills.length});
+  A().imports=A().imports.slice(0,20);
+  save();
+  const rows=S.jobs.map(j=>({j,b:before[j.id],a:fitCard(j).fit})).sort((x,y)=>y.a-x.a);
+  const P=S.profile;
+  let h='<div class="card"><h3>Parsed résumé</h3><div class="kpis">'+
+    '<div class="kpi"><div class="v">'+p.words+'</div><div class="l">Words</div></div>'+
+    '<div class="kpi"><div class="v">'+p.skills.length+'</div><div class="l">Skills found</div></div>'+
+    '<div class="kpi"><div class="v">'+p.found.length+'/5</div><div class="l">Standard sections</div></div>'+
+    (p.yrs!=null?'<div class="kpi"><div class="v">'+p.yrs+'</div><div class="l">Years spanned by dates</div></div>':'')+'</div>'+
+    '<table><tr><th>Name</th><td>'+esc(p.name||"Not found")+'</td></tr><tr><th>Email</th><td>'+esc(p.email||"Not found")+'</td></tr><tr><th>Phone</th><td>'+esc(p.phone||"Not found")+'</td></tr>'+(p.linkedin?'<tr><th>LinkedIn</th><td>'+esc(p.linkedin)+'</td></tr>':'')+
+    '<tr><th>Sections</th><td>'+(["summary","experience","education","skills","certifications"].map(s=>'<span class="'+(p.found.includes(s)?'up':'down')+'">'+(p.found.includes(s)?'✓':'✗')+' '+s+'</span>').join(" · "))+'</td></tr></table>'+
+    (p.skills.length?'<h3 style="margin-top:12px">Skills</h3><div class="chips">'+p.skills.map(s=>'<span class="hit">'+esc(s)+'</span>').join("")+'</div>':'')+
+    (filled.length?'<p class="muted">Filled empty Profile fields: '+esc(filled.join(", "))+'.</p>':'')+
+    (p.yrs!=null&&!P.experienceYears?'<p class="muted">Tip: the dates on this résumé span about '+p.yrs+' years. Set your years of experience in the Profile tab so job match can use it.</p>':'')+
+    '<div class="row" style="margin-top:8px"><button class="btn ghost small" type="button" onclick="showTab(\'resume\')">Open the ATS check</button><button class="btn ghost small" type="button" onclick="showTab(\'jobs\')">Open job fit</button></div></div>';
+  h+='<div class="card"><h3>Job match with this résumé</h3>'+(rows.length?'<div class="tablewrap"><table><tr><th>Job</th><th>Fit before</th><th>Fit now</th><th>Change</th></tr>'+rows.map(r=>{ const d=Math.round(r.a)-Math.round(r.b); return '<tr><td>'+esc(r.j.company+" · "+r.j.title)+'</td><td>'+Math.round(r.b)+'%</td><td><b>'+Math.round(r.a)+'%</b></td><td class="'+(d>0?'up':d<0?'down':'')+'">'+(d>0?'+':'')+d+'</td></tr>'; }).join("")+'</table></div>'+($("#im_toResume").checked?'':'<p class="muted">Job match scores use the résumé in tab 2. Tick the first box to score with this one.</p>'):'<p class="muted">No saved jobs yet. Add some in Job fit or import openings in Top 10, and they\'ll be scored against this résumé.</p>')+'</div>';
+  $("#im_out").innerHTML=h; $("#im_msg").textContent="✓ Imported.";
+  renderAll();
+  wfFire("resume_imported",{});
+};
+function renderImportHist(){
+  const L=A().imports||[];
+  $("#im_hist").innerHTML=L.length?'<div class="card"><h3>Recent imports</h3><div class="tablewrap"><table><tr><th>When</th><th>Source</th><th>Words</th><th>Skills found</th></tr>'+L.map(i=>'<tr><td>'+esc(new Date(i.at).toLocaleString())+'</td><td>'+esc(i.source)+'</td><td>'+i.words+'</td><td>'+i.skills+'</td></tr>').join("")+'</table></div></div>':"";
+}
+
+/* ================= ADMIN: TEMPLATES ================= */
+$("#tp_vars").innerHTML=TPL_VARS.map(v=>"<code>{{"+v+"}}</code>").join(" ");
+function tpClear(){ $("#tp_id").value=""; $("#tp_name").value=""; $("#tp_subject").value=""; $("#tp_body").value=""; $("#tp_formTitle").textContent="New template"; $("#tp_msg").textContent=""; }
+$("#tp_clear").onclick=tpClear;
+$("#tp_save").onclick=()=>{
+  const name=$("#tp_name").value.trim(), subject=$("#tp_subject").value.trim(), body=$("#tp_body").value;
+  if(!name||!subject){ $("#tp_msg").textContent="Add a name and a subject."; return; }
+  const id=$("#tp_id").value; let t=id?A().templates.find(x=>x.id===id):null;
+  if(!t){ t={id:uid()}; A().templates.push(t); }
+  Object.assign(t,{name,subject,body}); save(); tpClear(); $("#tp_msg").textContent="✓ Saved."; renderAdmin();
+};
+function renderTemplates(){
+  const T=A().templates;
+  $("#tp_list").innerHTML=T.length?T.map(t=>{ const used=A().workflows.filter(w=>w.steps.some(s=>s.type==="notify"&&s.templateId===t.id)).map(w=>w.name);
+    return '<div class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">'+esc(t.name)+'</h3><div class="row"><button class="btn ghost small" data-aa="tp-edit" data-id="'+t.id+'" type="button">Edit</button><button class="btn danger small" data-aa="tp-del" data-id="'+t.id+'" type="button">Delete</button></div></div>'+
+    '<div class="muted" style="margin-top:4px"><b>Subject:</b> '+esc(t.subject)+'</div><pre class="prompt" style="margin-top:6px">'+esc(t.body)+'</pre>'+
+    '<div class="muted">'+(used.length?'Used by: '+esc(used.join(", ")):'Not used by any workflow yet.')+'</div></div>'; }).join(""):'<div class="card empty">No templates yet.</div>';
+}
+
+/* ================= ADMIN: RECIPIENTS ================= */
+const validEmail=e=>/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(e);
+$("#rc_add").onclick=()=>{
+  const name=$("#rc_name").value.trim(), email=$("#rc_email").value.trim().toLowerCase();
+  if(!validEmail(email)){ $("#rc_msg").textContent="Enter a valid email address."; return; }
+  if(A().recipients.some(r=>r.email===email)){ $("#rc_msg").textContent="That email is already on the list."; return; }
+  const r={id:uid(),name:name||email,email,active:true}; A().recipients.push(r);
+  if(confirm("Add "+r.name+" to every notification step in your workflows? (Cancel to choose per notification below.)")) notifySteps().forEach(x=>{ if(!x.s.recipients.includes(r.id)) x.s.recipients.push(r.id); });
+  save(); $("#rc_name").value=""; $("#rc_email").value=""; $("#rc_msg").textContent="✓ Added "+r.name+"."; renderAdmin();
+};
+function notifySteps(){ const out=[]; A().workflows.forEach(w=>w.steps.forEach((s,i)=>{ if(s.type==="notify") out.push({w,s,i}); })); return out; }
+function tplName(id){ const t=A().templates.find(x=>x.id===id); return t?t.name:"(missing template)"; }
+function renderRecipients(){
+  const R=A().recipients, N=notifySteps();
+  if(!R.length){ $("#rc_list").innerHTML='<div class="card empty">Nobody gets notifications yet. Add yourself first, then anyone else who should hear about your progress.</div>'; return; }
+  let h='<div class="card"><div class="tablewrap"><table><tr><th>Recipient</th><th>Status</th>'+N.map(n=>'<th title="'+esc(n.w.name)+'">'+esc(n.w.name)+'<br><span class="muted" style="font-weight:400">✉️ '+esc(tplName(n.s.templateId))+'</span></th>').join("")+'<th></th></tr>'+
+    R.map(r=>'<tr><td><b>'+esc(r.name)+'</b><br><span class="muted">'+esc(r.email)+'</span></td><td>'+(r.active?'<span class="up">Active</span>':'<span class="muted">Paused</span>')+'</td>'+
+      N.map(n=>'<td><input type="checkbox" data-sub="'+r.id+'" data-wf="'+n.w.id+'" data-step="'+n.s.id+'"'+(n.s.recipients.includes(r.id)?' checked':'')+' aria-label="'+esc(r.name+' gets '+n.w.name)+'"></td>').join("")+
+      '<td style="white-space:nowrap"><button class="btn ghost small" data-aa="rc-toggle" data-id="'+r.id+'" type="button">'+(r.active?'Pause':'Resume')+'</button> <button class="btn danger small" data-aa="rc-del" data-id="'+r.id+'" type="button">Remove</button></td></tr>').join("")+
+    '</table></div>'+(N.length?'':'<p class="muted">No workflow has a notification step yet. Add one in Workflows, then tick who gets it here.</p>')+'</div>';
+  $("#rc_list").innerHTML=h;
+}
+
+/* ================= ADMIN: WORKFLOW LIST & EDITOR ================= */
+function stepSummary(s){
+  if(s.type==="condition") return "🔎 If "+(COND_FIELDS[s.field]||s.field)+" "+(COND_OPS[s.op]||s.op)+(["istrue","isfalse"].includes(s.op)?"":" "+(s.field==="stage"?stageLabel(s.value):s.value))+(s.onFail==="skip"?" (else skip next step)":" (else stop)");
+  if(s.type==="approval") return "✅ Approval by "+(s.approver||"you")+(s.approverEmail?" <"+s.approverEmail+">":"");
+  if(s.type==="notify"){ const n=s.recipients.filter(id=>A().recipients.some(r=>r.id===id)).length+(s.extra?s.extra.split(/[,;\s]+/).filter(Boolean).length:0); return "✉️ Send \""+tplName(s.templateId)+"\" to "+n+" recipient"+(n===1?"":"s"); }
+  return s.type;
+}
+function trigSummary(t){ return TRIGGERS[t.type]+(t.type==="stage"?": "+(t.value?stageLabel(t.value):"any stage"):""); }
+function renderWfList(){
+  const W=A().workflows;
+  $("#wf_list").innerHTML=W.length?W.map(w=>'<div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><h3 style="margin:0">'+esc(w.name)+'</h3><div class="muted">When: '+esc(trigSummary(w.trigger))+'</div></div>'+
+    '<label style="display:flex;gap:6px;align-items:center;font-weight:400;margin:0"><input type="checkbox" data-aa="wf-toggle" data-id="'+w.id+'"'+(w.enabled?' checked':'')+'> '+(w.enabled?'<span class="up">On</span>':'<span class="muted">Off</span>')+'</label></div>'+
+    '<ol style="margin:8px 0;padding-left:20px">'+(w.steps.length?w.steps.map(s=>'<li>'+esc(stepSummary(s))+'</li>').join(""):'<li class="muted">No steps yet</li>')+'</ol>'+
+    '<div class="row"><button class="btn ghost small" data-aa="wf-edit" data-id="'+w.id+'" type="button">Edit</button>'+
+    '<select data-wftest="'+w.id+'" style="width:auto;max-width:260px"><option value="">Test run with a job…</option>'+S.jobs.map(j=>'<option value="'+esc(j.id)+'">'+esc(j.company+" · "+j.title)+'</option>').join("")+'</select>'+
+    '<button class="btn danger small" data-aa="wf-del" data-id="'+w.id+'" type="button">Delete</button></div></div>').join(""):'<div class="card empty">No workflows yet.</div>';
+}
+let wfDraft=null;
+function openWfEditor(w){ wfDraft=JSON.parse(JSON.stringify(w)); renderWfEditor(); $("#wf_editor").style.display="block"; $("#wf_editor").scrollIntoView({behavior:"smooth",block:"start"}); }
+$("#wf_new").onclick=()=>openWfEditor({id:"",name:"",enabled:true,trigger:{type:"stage",value:"phone"},steps:[]});
+function opt(map,cur){ return Object.keys(map).map(k=>'<option value="'+esc(k)+'"'+(k===cur?' selected':'')+'>'+esc(map[k])+'</option>').join(""); }
+function renderWfEditor(){
+  const w=wfDraft, stages={}; stages[""]="Any stage"; STAGES.filter(s=>s.k!=="saved").forEach(s=>stages[s.k]=s.l);
+  const tpls={}; A().templates.forEach(t=>tpls[t.id]=t.name);
+  let h='<h3>'+(w.id?"Edit workflow":"New workflow")+'</h3><div class="grid2"><div><label>Workflow name</label><input data-wfe="name" value="'+esc(w.name)+'" placeholder="e.g. Tell my recruiter about interviews"></div>'+
+    '<div><label>When this happens</label><select data-wfe="trigger.type">'+opt(TRIGGERS,w.trigger.type)+'</select></div>'+
+    (w.trigger.type==="stage"?'<div><label>Stage</label><select data-wfe="trigger.value">'+opt(stages,w.trigger.value||"")+'</select></div>':'')+'</div>'+
+    '<h3 style="margin-top:14px">Steps <span class="muted">(run in order)</span></h3>';
+  h+=w.steps.length?w.steps.map((s,i)=>{
+    let b='<div class="card" style="margin-bottom:8px;padding:12px"><div class="row" style="justify-content:space-between"><b>'+(i+1)+'. '+({condition:"🔎 Condition",approval:"✅ Approval",notify:"✉️ Auto-notification"}[s.type])+'</b><div class="row">'+
+      '<button class="btn ghost small" data-aa="st-up" data-i="'+i+'" type="button" aria-label="Move up"'+(i===0?' disabled':'')+'>↑</button><button class="btn ghost small" data-aa="st-down" data-i="'+i+'" type="button" aria-label="Move down"'+(i===w.steps.length-1?' disabled':'')+'>↓</button><button class="btn danger small" data-aa="st-del" data-i="'+i+'" type="button" aria-label="Remove step">✕</button></div></div><div class="grid2" style="margin-top:8px">';
+    if(s.type==="condition"){
+      b+='<div><label>Field</label><select data-st="'+i+'" data-f="field">'+opt(COND_FIELDS,s.field)+'</select></div><div><label>Rule</label><select data-st="'+i+'" data-f="op">'+opt(COND_OPS,s.op)+'</select></div>';
+      if(!["istrue","isfalse"].includes(s.op)) b+='<div><label>Value</label>'+(s.field==="stage"?'<select data-st="'+i+'" data-f="value">'+opt(Object.fromEntries(STAGES.map(x=>[x.k,x.l])),s.value)+'</select>':'<input data-st="'+i+'" data-f="value" value="'+esc(s.value)+'">')+'</div>';
+      b+='<div><label>If it doesn\'t match</label><select data-st="'+i+'" data-f="onFail">'+opt({stop:"Stop the workflow",skip:"Skip the next step and continue"},s.onFail)+'</select></div>';
+    } else if(s.type==="approval"){
+      const rc={"":"Not on the recipient list"}; A().recipients.forEach(r=>rc[r.email]=r.name+" <"+r.email+">");
+      b+='<div><label>Approver name</label><input data-st="'+i+'" data-f="approver" value="'+esc(s.approver)+'" placeholder="e.g. Me, or my career coach"></div>'+
+        '<div><label>Approver email</label><select data-st="'+i+'" data-f="approverEmail">'+opt(rc,s.approverEmail||"")+'</select></div>'+
+        '<div><label>Instructions for the approver</label><input data-st="'+i+'" data-f="note" value="'+esc(s.note)+'"></div>'+
+        '<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" data-st="'+i+'" data-f="emailApprover"'+(s.emailApprover?' checked':'')+'> Draft an email asking for approval</label>';
+    } else if(s.type==="notify"){
+      b+='<div><label>Template</label><select data-st="'+i+'" data-f="templateId">'+opt(tpls,s.templateId)+'</select></div>'+
+        '<div><label>Extra emails <span class="hint">(comma separated, optional)</span></label><input data-st="'+i+'" data-f="extra" value="'+esc(s.extra||"")+'"></div></div>'+
+        '<label style="margin-top:8px">Recipients</label><div class="signals">'+(A().recipients.length?A().recipients.map(r=>'<label><input type="checkbox" data-st="'+i+'" data-rcp="'+r.id+'"'+(s.recipients.includes(r.id)?' checked':'')+'> <span>'+esc(r.name)+(r.active?'':' <span class="muted">(paused)</span>')+'</span></label>').join(""):'<span class="muted">No recipients yet. Add them in the Recipients tab.</span>')+'</div><div>';
+    }
+    return b+'</div></div>';
+  }).join(""):'<p class="muted">Add steps below. A typical flow: a condition, then an approval, then a notification.</p>';
+  h+='<div class="row" style="margin-top:6px"><button class="btn ghost small" data-aa="st-add" data-type="condition" type="button">+ Condition</button><button class="btn ghost small" data-aa="st-add" data-type="approval" type="button">+ Approval step</button><button class="btn ghost small" data-aa="st-add" data-type="notify" type="button">+ Auto-notification</button></div>'+
+    '<div class="row" style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px"><button class="btn" data-aa="wf-save" type="button">Save workflow</button><button class="btn ghost" data-aa="wf-cancel" type="button">Cancel</button><span class="muted" id="wf_msg"></span></div>';
+  $("#wf_editor").innerHTML=h;
+}
+$("#wf_editor").addEventListener("change",e=>{
+  const t=e.target, w=wfDraft; if(!w) return;
+  if(t.dataset.wfe){ const k=t.dataset.wfe; if(k==="name") w.name=t.value; else if(k==="trigger.type"){ w.trigger.type=t.value; w.trigger.value=t.value==="stage"?(w.trigger.value||"phone"):""; renderWfEditor(); } else if(k==="trigger.value") w.trigger.value=t.value; return; }
+  if(t.dataset.st!=null){ const s=w.steps[+t.dataset.st]; if(!s) return;
+    if(t.dataset.rcp){ s.recipients=s.recipients.filter(x=>x!==t.dataset.rcp); if(t.checked) s.recipients.push(t.dataset.rcp); return; }
+    const f=t.dataset.f; s[f]=t.type==="checkbox"?t.checked:t.value;
+    if(f==="field"){ s.op=s.field==="referral"?"istrue":["fit","salary","daysToInterview"].includes(s.field)?"gte":s.field==="stage"?"eq":"contains"; s.value=s.field==="stage"?"phone":""; renderWfEditor(); }
+    if(f==="op") renderWfEditor();
+  }
+});
+$("#wf_editor").addEventListener("input",e=>{ const t=e.target; if(!wfDraft) return; if(t.dataset.wfe==="name") wfDraft.name=t.value; else if(t.dataset.st!=null&&t.tagName==="INPUT"&&t.type!=="checkbox"&&t.dataset.f){ const s=wfDraft.steps[+t.dataset.st]; if(s) s[t.dataset.f]=t.value; } });
+function newStep(type){
+  if(type==="condition") return {id:uid(),type,field:"fit",op:"gte",value:"60",onFail:"stop"};
+  if(type==="approval") return {id:uid(),type,approver:"",approverEmail:"",note:"",emailApprover:true};
+  return {id:uid(),type:"notify",templateId:(A().templates[0]||{}).id||"",recipients:A().recipients.filter(r=>r.active).map(r=>r.id),extra:""};
+}
+
+/* ================= ADMIN: WORKFLOW ENGINE ================= */
+function wfFire(type,ctx){
+  ensureAdmin(); let n=0;
+  A().workflows.filter(w=>w.enabled&&w.trigger.type===type&&(type!=="stage"||!w.trigger.value||w.trigger.value===ctx.to)).forEach(w=>{ startRun(w,ctx,false); n++; });
+  if(n){ save(); renderAdmin(); }
+}
+function startRun(w,ctx,test){
+  const run={id:uid(),wfId:w.id,wfName:w.name,test:!!test,jobId:ctx.job?ctx.job.id:null,ctx:{trigger:TRIGGERS[w.trigger.type],from:ctx.from||"",to:ctx.to||"",approver:"",approvalComment:""},at:new Date().toISOString(),status:"running",step:0,log:[]};
+  A().runs.unshift(run); A().runs=A().runs.slice(0,100);
+  runLog(run,(test?"Test run started":"Started")+": "+run.ctx.trigger);
+  advance(run); return run;
+}
+function runLog(run,m){ run.log.push({at:new Date().toISOString(),m}); }
+function runJob(run){ return run.jobId?S.jobs.find(j=>j.id===run.jobId):null; }
+function condValue(field,run){
+  const j=runJob(run)||{};
+  switch(field){
+    case "fit": return run.jobId&&runJob(run)?Math.round(fitCard(j).fit):null;
+    case "stage": return j.stage||"";
+    case "salary": { const s=nums(j.salary); return s.length?Math.max(...s):null; }
+    case "referral": return !!j.referral;
+    case "daysToInterview": return j.interview&&j.interview.when?daysAhead(j.interview.when):null;
+    default: return j[field]||"";
+  }
+}
+function evalCond(s,run){
+  const v=condValue(s.field,run), want=s.value;
+  if(s.op==="istrue") return v===true||(typeof v==="string"&&!!v);
+  if(s.op==="isfalse") return !v;
+  if(v==null||v==="") return false;
+  if(s.op==="gte") return +v>=parseFloat(String(want).replace(/[,$k]/gi,""))*(/k/i.test(want)?1000:1);
+  if(s.op==="lte") return +v<=parseFloat(String(want).replace(/[,$k]/gi,""))*(/k/i.test(want)?1000:1);
+  if(s.op==="eq") return String(v).toLowerCase()===String(want).toLowerCase();
+  if(s.op==="ne") return String(v).toLowerCase()!==String(want).toLowerCase();
+  if(s.op==="contains") return String(v).toLowerCase().includes(String(want).toLowerCase());
+  return false;
+}
+function advance(run){
+  const w=A().workflows.find(x=>x.id===run.wfId);
+  if(!w){ run.status="stopped"; runLog(run,"Workflow was deleted."); return; }
+  while(run.step<w.steps.length){
+    const s=w.steps[run.step];
+    if(s.type==="condition"){
+      const ok=evalCond(s,run), v=condValue(s.field,run);
+      runLog(run,"Condition \""+stepSummary(s).replace(/^🔎 /,"")+"\": "+(ok?"matched":"didn't match")+" (value: "+(v==null||v===""?"none":(s.field==="stage"?stageLabel(v):v))+")");
+      if(!ok){ if(s.onFail==="skip"){ run.step+=2; continue; } run.status="stopped"; runLog(run,"Stopped."); return; }
+      run.step++; continue;
+    }
+    if(s.type==="approval"){
+      run.status="waiting"; run.pending={stepId:s.id,approver:s.approver||"You",approverEmail:s.approverEmail||"",note:s.note||"",at:new Date().toISOString()};
+      runLog(run,"Waiting for approval from "+run.pending.approver+".");
+      if(s.emailApprover&&s.approverEmail){ const vars=tplVars(run);
+        queueMail(run,[s.approverEmail],"Approval needed: "+run.wfName+(vars.company?" ("+vars.company+")":""),
+          "Hi "+(s.approver||"")+",\n\nPlease approve the next step of \""+run.wfName+"\""+(vars.company?" for "+vars.title+" at "+vars.company:"")+".\n"+(s.note?"\n"+s.note+"\n":"")+"\nReply to this email with approve or reject, and I'll record it in the Job Coach.\n\nThanks,\n"+vars.candidate,"approval"); }
+      return;
+    }
+    if(s.type==="notify"){
+      const t=A().templates.find(x=>x.id===s.templateId);
+      const to=s.recipients.map(id=>A().recipients.find(r=>r.id===id)).filter(r=>r&&r.active).map(r=>r.email).concat(String(s.extra||"").split(/[,;\s]+/).filter(validEmail));
+      if(!t) runLog(run,"Notification skipped: its template was deleted.");
+      else { const vars=tplVars(run); queueMail(run,[...new Set(to)],fillTpl(t.subject,vars),fillTpl(t.body,vars),"notify");
+        runLog(run,"Drafted \""+t.name+"\" to "+(to.length?to.join(", "):"nobody (add recipients)")+"."); }
+      run.step++; continue;
+    }
+    run.step++;
+  }
+  run.status="done"; runLog(run,"Finished.");
+}
+function decide(runId,ok,comment){
+  const run=A().runs.find(r=>r.id===runId); if(!run||run.status!=="waiting") return;
+  run.ctx.approver=run.pending.approver; run.ctx.approvalComment=comment?"("+comment+")":"";
+  runLog(run,(ok?"Approved":"Rejected")+" by "+run.pending.approver+(comment?": "+comment:"")); run.pending=null;
+  if(!ok){ run.status="rejected"; save(); renderAdmin(); return; }
+  run.status="running"; run.step++; advance(run); save(); renderAdmin();
+}
+function tplVars(run){
+  const j=runJob(run)||{}, P=S.profile||{};
+  return {candidate:P.fullName||"The candidate",company:j.company||"",title:j.title||"",stage:stageLabel(run.ctx.to||j.stage||""),fromStage:run.ctx.from?stageLabel(run.ctx.from):"",
+    fit:j.id?Math.round(fitCard(j).fit):"",location:(j.interview&&j.interview.loc)||j.location||"",salary:j.salary||"",url:j.url||"",
+    interviewDate:j.interview&&j.interview.when?new Date(j.interview.when).toLocaleString([], {weekday:"long",month:"long",day:"numeric",hour:"numeric",minute:"2-digit"}):"",
+    workflow:run.wfName,trigger:run.ctx.trigger,approver:run.ctx.approver||"",approvalComment:run.ctx.approvalComment||"",date:new Date().toLocaleDateString([], {month:"long",day:"numeric",year:"numeric"})};
+}
+function fillTpl(s,vars){ return String(s||"").replace(/\{\{\s*(\w+)\s*\}\}/g,(m,k)=>vars[k]!=null?String(vars[k]):m); }
+function queueMail(run,to,subject,body,kind){ A().outbox.unshift({id:uid(),runId:run.id,wfName:run.wfName,test:run.test,kind,to,subject,body,at:new Date().toISOString(),sent:false}); A().outbox=A().outbox.slice(0,200); }
+function mailto(m){ return "mailto:"+m.to.filter(validEmail).join(",")+"?subject="+encodeURIComponent(m.subject)+"&body="+encodeURIComponent(m.body); }
+function renderInbox(){
+  const W=A().runs.filter(r=>r.status==="waiting");
+  $("#ib_approvals").innerHTML=W.length?W.map(r=>{ const j=runJob(r);
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b>'+esc(r.wfName)+'</b>'+(r.test?' <span class="pill">test</span>':'')+'<div class="muted">'+(j?esc(j.company+" · "+j.title)+" · ":"")+'Approver: '+esc(r.pending.approver)+' · since '+esc(new Date(r.pending.at).toLocaleString())+'</div>'+(r.pending.note?'<div>'+esc(r.pending.note)+'</div>':'')+
+    '<div class="row" style="margin-top:6px"><input id="cm_'+r.id+'" placeholder="Comment (optional)" style="max-width:320px"><button class="btn small" data-aa="ap-yes" data-id="'+r.id+'" type="button">Approve</button><button class="btn danger small" data-aa="ap-no" data-id="'+r.id+'" type="button">Reject</button></div></div>'; }).join(""):'<p class="muted">Nothing waiting.</p>';
+  const O=A().outbox;
+  $("#ib_outbox").innerHTML=O.length?'<div class="tablewrap"><table><tr><th>Email</th><th>To</th><th></th></tr>'+O.slice(0,40).map(m=>'<tr><td><b>'+esc(m.subject)+'</b>'+(m.test?' <span class="pill">test</span>':'')+'<br><span class="muted">'+esc(m.wfName)+' · '+esc(new Date(m.at).toLocaleString())+'</span><details><summary class="muted" style="cursor:pointer">Preview</summary><pre class="prompt">'+esc(m.body)+'</pre></details></td><td>'+(m.to.length?esc(m.to.join(", ")):'<span class="down">No recipients</span>')+'</td>'+
+    '<td style="white-space:nowrap">'+(m.sent?'<span class="up">✓ Sent</span> ':'<a class="btn small" href="'+esc(mailto(m))+'" data-aa="mail-open" data-id="'+m.id+'">✉️ Open email</a> ')+'<button class="btn ghost small" data-aa="mail-copy" data-id="'+m.id+'" type="button">Copy</button> '+(m.sent?'':'<button class="btn ghost small" data-aa="mail-sent" data-id="'+m.id+'" type="button">Mark sent</button> ')+'<button class="btn danger small" data-aa="mail-del" data-id="'+m.id+'" type="button" aria-label="Delete">✕</button></td></tr>').join("")+'</table></div>':'<p class="muted">No notifications yet. They appear here when a workflow runs.</p>';
+  const R=A().runs;
+  $("#ib_runs").innerHTML=R.length?'<div class="tablewrap"><table><tr><th>Workflow</th><th>Started</th><th>Status</th><th>Log</th></tr>'+R.slice(0,30).map(r=>'<tr><td>'+esc(r.wfName)+(r.test?' <span class="pill">test</span>':'')+'</td><td>'+esc(new Date(r.at).toLocaleString())+'</td><td>'+({done:'<span class="up">Done</span>',waiting:'<span class="pill">Waiting</span>',stopped:'<span class="muted">Stopped</span>',rejected:'<span class="down">Rejected</span>',running:'Running'}[r.status]||esc(r.status))+'</td><td><details><summary class="muted" style="cursor:pointer">'+r.log.length+' entries</summary><ul style="margin:4px 0;padding-left:18px">'+r.log.map(l=>'<li>'+esc(l.m)+'</li>').join("")+'</ul></details></td></tr>').join("")+'</table></div><div class="row" style="margin-top:8px"><button class="btn ghost small" data-aa="runs-clear" type="button">Clear finished runs</button></div>':'<p class="muted">No runs yet.</p>';
+}
+
+/* ================= ADMIN: EVENTS ================= */
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-aa]"); if(!b) return;
+  const act=b.dataset.aa, id=b.dataset.id, ad=A();
+  if(act==="wf-toggle") return;
+  if(act==="tp-edit"){ const t=ad.templates.find(x=>x.id===id); if(!t) return; $("#tp_id").value=t.id; $("#tp_name").value=t.name; $("#tp_subject").value=t.subject; $("#tp_body").value=t.body; $("#tp_formTitle").textContent="Edit template"; window.scrollTo({top:0,behavior:"smooth"}); }
+  else if(act==="tp-del"){ if(!confirm("Delete this template? Notification steps that use it will be skipped.")) return; ad.templates=ad.templates.filter(x=>x.id!==id); save(); renderAdmin(); }
+  else if(act==="rc-toggle"){ const r=ad.recipients.find(x=>x.id===id); if(r){ r.active=!r.active; save(); renderAdmin(); } }
+  else if(act==="rc-del"){ const r=ad.recipients.find(x=>x.id===id); if(!r||!confirm("Remove "+r.name+" from all notifications?")) return; ad.recipients=ad.recipients.filter(x=>x.id!==id); notifySteps().forEach(n=>n.s.recipients=n.s.recipients.filter(x=>x!==id)); save(); renderAdmin(); }
+  else if(act==="wf-edit"){ const w=ad.workflows.find(x=>x.id===id); if(w) openWfEditor(w); }
+  else if(act==="wf-del"){ if(!confirm("Delete this workflow? Runs already in progress will stop.")) return; ad.workflows=ad.workflows.filter(x=>x.id!==id); save(); renderAdmin(); }
+  else if(act==="wf-cancel"){ wfDraft=null; $("#wf_editor").style.display="none"; }
+  else if(act==="wf-save"){
+    const w=wfDraft; if(!w.name.trim()){ $("#wf_msg").textContent="Give the workflow a name."; return; }
+    if(!w.steps.length){ $("#wf_msg").textContent="Add at least one step."; return; }
+    if(w.steps.some(s=>s.type==="notify"&&!s.templateId)){ $("#wf_msg").textContent="Pick a template for each notification step."; return; }
+    if(!w.id){ w.id=uid(); ad.workflows.push(w); } else { const i=ad.workflows.findIndex(x=>x.id===w.id); if(i>=0) ad.workflows[i]=w; else ad.workflows.push(w); }
+    wfDraft=null; $("#wf_editor").style.display="none"; save(); renderAdmin();
+  }
+  else if(act==="st-add"){ wfDraft.steps.push(newStep(b.dataset.type)); renderWfEditor(); }
+  else if(act==="st-del"){ wfDraft.steps.splice(+b.dataset.i,1); renderWfEditor(); }
+  else if(act==="st-up"||act==="st-down"){ const i=+b.dataset.i, k=act==="st-up"?i-1:i+1, s=wfDraft.steps; if(k<0||k>=s.length) return; [s[i],s[k]]=[s[k],s[i]]; renderWfEditor(); }
+  else if(act==="ap-yes"||act==="ap-no"){ const c=$("#cm_"+id); decide(id,act==="ap-yes",c?c.value.trim():""); }
+  else if(act==="mail-open"){ const m=ad.outbox.find(x=>x.id===id); if(m&&!m.to.length){ e.preventDefault(); alert("This email has no recipients. Add some in the Recipients tab first."); } }
+  else if(act==="mail-copy"){ const m=ad.outbox.find(x=>x.id===id); if(m) copy("To: "+m.to.join(", ")+"\nSubject: "+m.subject+"\n\n"+m.body,b); }
+  else if(act==="mail-sent"){ const m=ad.outbox.find(x=>x.id===id); if(m){ m.sent=true; save(); renderAdmin(); } }
+  else if(act==="mail-del"){ ad.outbox=ad.outbox.filter(x=>x.id!==id); save(); renderAdmin(); }
+  else if(act==="runs-clear"){ ad.runs=ad.runs.filter(r=>r.status==="waiting"); save(); renderAdmin(); }
+});
+document.addEventListener("change",e=>{
+  const t=e.target, ad=A();
+  if(t.dataset.aa==="wf-toggle"){ const w=ad.workflows.find(x=>x.id===t.dataset.id); if(w){ w.enabled=t.checked; save(); renderAdmin(); } }
+  else if(t.dataset.sub){ const w=ad.workflows.find(x=>x.id===t.dataset.wf), s=w&&w.steps.find(x=>x.id===t.dataset.step); if(s){ s.recipients=s.recipients.filter(x=>x!==t.dataset.sub); if(t.checked) s.recipients.push(t.dataset.sub); save(); renderAdmin(); } }
+  else if(t.dataset.wftest){ const w=ad.workflows.find(x=>x.id===t.dataset.wftest), j=S.jobs.find(x=>x.id===t.value); if(w&&j){ startRun(w,{job:j,from:"",to:j.stage},true); save(); admPanel="inbox"; renderAdmin(); } t.value=""; }
+});
+
 /* ================= EVENTS & BOOT ================= */
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-act]"); if(!b) return;
@@ -1080,7 +1671,7 @@ document.addEventListener("click",e=>{
   if(b.dataset.act==="edit") editJob(id);
   else if(b.dataset.act==="del") delJob(id);
   else if(b.dataset.act==="apply"&&j){ setStage(j,"applied"); showTab("apps"); }
-  else if(b.dataset.act==="prep"&&j){ showTab("practice"); $("#pr_job").value=id; $("#pr_job").onchange(); }
+  else if(b.dataset.act==="prep"&&j){ showTab("practice"); $("#pr_job").value=id; $("#pr_job").onchange(); $("#wx_job").value=id; $("#wx_job").onchange(); }
   else if(b.dataset.act==="debrief") openDebrief(id);
 });
 document.addEventListener("change",e=>{
@@ -1091,9 +1682,10 @@ document.addEventListener("change",e=>{
 function renderAll(){
   jobOptions($("#r_job"),"Paste a JD below, or pick a saved job…");
   jobOptions($("#pr_job"),"Pick a saved job…");
+  jobOptions($("#wx_job"),"Pick a saved job (optional)…");
   jobOptions($("#t_job"),"Paste a JD below, or pick a saved job…");
   renderTop10();
-  renderJobs(); renderApps(); renderStudio(); renderInsights();
+  renderJobs(); renderApps(); renderStudio(); renderInsights(); renderAdmin();
 }
 loadProfile(); $("#r_text").value=S.resume.text||""; $("#t_master").value=S.master||S.resume.text||"";
 (()=>{ const t=lsGet("jobcoach_tab"); if(t&&$("#s-"+t)) showTab(t); else renderAll(); })();
