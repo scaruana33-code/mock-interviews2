@@ -1788,5 +1788,323 @@ function renderAll(){
 loadProfile(); $("#r_text").value=S.resume.text||""; $("#t_master").value=S.master||S.resume.text||"";
 (()=>{ const t=lsGet("jobcoach_tab"); if(t&&$("#s-"+t)) showTab(t); else renderAll(); })();
 </script>
+<!-- ============ TALK TO ROSE: voice chat assistant ============ -->
+<style>
+#rc_fab{position:fixed;right:16px;bottom:16px;z-index:40;background:var(--rose);color:#fff;border:0;border-radius:999px;padding:12px 18px;font:inherit;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.22)}
+#rc_fab[hidden]{display:none}
+#rc_panel{position:fixed;right:16px;bottom:16px;z-index:41;width:min(400px,calc(100vw - 32px));height:min(600px,calc(100vh - 32px));background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 34px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden}
+#rc_panel[hidden]{display:none}
+.rc_head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--rose-soft)}
+.rc_head b{flex:1}
+.rc_head .muted{display:block;font-weight:400}
+.rc_icon{background:none;border:1px solid transparent;border-radius:8px;color:var(--ink);font:inherit;font-size:16px;cursor:pointer;padding:4px 7px}
+.rc_icon:hover,.rc_icon:focus-visible{border-color:var(--line)}
+.rc_icon[aria-pressed="true"]{background:var(--card);border-color:var(--rose)}
+#rc_log{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.rc_msg{max-width:88%;padding:8px 11px;border-radius:12px;white-space:pre-wrap;font-size:14px;line-height:1.45}
+.rc_msg.bot{background:var(--rose-soft);align-self:flex-start;border-bottom-left-radius:4px}
+.rc_msg.me{background:var(--rose);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.rc_msg.sys{align-self:center;color:var(--quiet);font-size:12px;background:none;padding:2px}
+.rc_chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 8px}
+.rc_chips button{background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer}
+.rc_bar{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--line);align-items:center}
+.rc_bar input{flex:1;min-width:0}
+#rc_mic{width:44px;height:40px;border-radius:999px;border:1px solid var(--rose);background:var(--card);color:var(--rose);font-size:18px;cursor:pointer;flex:none}
+#rc_mic.live{background:var(--bad);border-color:var(--bad);color:#fff;animation:rcpulse 1.2s infinite}
+@keyframes rcpulse{0%{box-shadow:0 0 0 0 rgba(178,58,58,.5)}70%{box-shadow:0 0 0 10px rgba(178,58,58,0)}100%{box-shadow:0 0 0 0 rgba(178,58,58,0)}}
+@media (prefers-reduced-motion:reduce){#rc_mic.live{animation:none}}
+#rc_set{padding:12px;border-bottom:1px solid var(--line);overflow-y:auto;max-height:60%}
+#rc_set[hidden]{display:none}
+#rc_set .grid2{gap:8px}
+@media print{#rc_fab,#rc_panel{display:none!important}}
+</style>
+<button id="rc_fab" type="button" aria-controls="rc_panel" aria-expanded="false">🎙️ Talk to Rose</button>
+<div id="rc_panel" role="dialog" aria-label="Talk to Coach Rose" hidden>
+  <div class="rc_head">
+    <b>Coach Rose <span class="muted" id="rc_mode">Voice chat · on-device answers</span></b>
+    <button class="rc_icon" id="rc_hands" type="button" aria-pressed="false" title="Hands-free: Rose listens again after she speaks">🔁</button>
+    <button class="rc_icon" id="rc_speak" type="button" aria-pressed="true" title="Read replies aloud">🔊</button>
+    <button class="rc_icon" id="rc_gear" type="button" aria-expanded="false" title="Voice and AI settings">⚙️</button>
+    <button class="rc_icon" id="rc_close" type="button" title="Close">✕</button>
+  </div>
+  <div id="rc_set" hidden>
+    <div class="grid2">
+      <div><label for="rc_voice">Rose's voice</label><select id="rc_voice"></select></div>
+      <div><label for="rc_rate">Speaking speed</label><select id="rc_rate"><option value="0.85">Slower</option><option value="1" selected>Normal</option><option value="1.15">Faster</option></select></div>
+    </div>
+    <h3 style="margin-top:12px">Smarter answers (optional)</h3>
+    <p class="muted" style="margin:0 0 8px">Without a key, Rose answers from your saved profile, jobs and odds right here in your browser. Add your own Claude API key for open-ended coaching and mock interviews. The key is saved only in this browser. When it's on, each question is sent straight to Anthropic with your profile, saved jobs, odds and résumé text.</p>
+    <div class="grid2">
+      <div><label for="rc_key">Claude API key</label><input id="rc_key" type="password" autocomplete="off" placeholder="sk-ant-…"></div>
+      <div><label for="rc_model">Model</label><select id="rc_model">
+        <option value="claude-opus-5-5">Claude Opus 5.5 (best)</option>
+        <option value="claude-sonnet-5-5">Claude Sonnet 5.5 (faster)</option>
+        <option value="claude-haiku-5-5">Claude Haiku 5.5 (fastest, cheapest)</option></select></div>
+    </div>
+    <div class="row" style="margin-top:8px"><button class="btn small" id="rc_saveKey" type="button">Save</button><button class="btn ghost small" id="rc_clearKey" type="button">Remove key</button><button class="btn ghost small" id="rc_clearChat" type="button">Clear chat</button><span class="muted" id="rc_setMsg"></span></div>
+  </div>
+  <div id="rc_log" aria-live="polite"></div>
+  <div class="rc_chips" id="rc_chips"></div>
+  <form class="rc_bar" id="rc_form">
+    <button id="rc_mic" type="button" title="Tap and talk" aria-label="Talk to Rose">🎤</button>
+    <input id="rc_in" autocomplete="off" placeholder="Ask Rose anything…" aria-label="Message to Rose">
+    <button class="btn small" type="submit">Send</button>
+  </form>
+</div>
+<script>
+"use strict";
+(()=>{
+const RC_KEY="jobcoach_rose_chat", RC_AI="jobcoach_rose_ai";
+const R={log:[],practice:null,listening:false,hands:false,speak:true,voice:"",rate:1,ai:{key:"",model:"claude-opus-5-5"}};
+try{ const d=JSON.parse(lsGet(RC_KEY)||"null"); if(d){ R.log=(d.log||[]).slice(-60); R.hands=!!d.hands; R.speak=d.speak!==false; R.voice=d.voice||""; R.rate=+d.rate||1; } }catch(e){}
+try{ const a=JSON.parse(lsGet(RC_AI)||"null"); if(a&&a.key) R.ai={key:a.key,model:a.model||"claude-opus-5-5"}; }catch(e){}
+const persist=()=>lsSet(RC_KEY,JSON.stringify({log:R.log.slice(-60),hands:R.hands,speak:R.speak,voice:R.voice,rate:R.rate}));
+
+/* ---------- UI ---------- */
+const fab=$("#rc_fab"), panel=$("#rc_panel"), logEl=$("#rc_log"), inp=$("#rc_in"), mic=$("#rc_mic");
+function open(){ panel.hidden=false; fab.hidden=true; fab.setAttribute("aria-expanded","true"); if(!R.log.length) greet(); paint(); inp.focus(); }
+function close(){ stopListening(); stopSpeaking(); panel.hidden=true; fab.hidden=false; fab.setAttribute("aria-expanded","false"); fab.focus(); }
+fab.onclick=open; $("#rc_close").onclick=close;
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!panel.hidden) close(); });
+function paint(){
+  logEl.innerHTML=R.log.map(m=>'<div class="rc_msg '+m.who+'">'+esc(m.text)+'</div>').join("");
+  logEl.scrollTop=logEl.scrollHeight;
+  $("#rc_mode").textContent=(R.practice?"Mock interview · ":"Voice chat · ")+(R.ai.key?"Claude answers":"on-device answers");
+  $("#rc_hands").setAttribute("aria-pressed",String(R.hands)); $("#rc_speak").setAttribute("aria-pressed",String(R.speak));
+  $("#rc_speak").textContent=R.speak?"🔊":"🔇";
+  const chips=R.practice?["Next question","Stop practice"]:["What are my top jobs?","What are my odds?","How do I boost my odds?","Quiz me","How's my résumé?","Open Practice"];
+  $("#rc_chips").innerHTML=chips.map(c=>'<button type="button">'+esc(c)+'</button>').join("");
+  $("#rc_chips").querySelectorAll("button").forEach(b=>b.onclick=()=>send(b.textContent));
+}
+function add(who,text){ R.log.push({who,text,at:Date.now()}); persist(); paint(); }
+function say(text){ add("bot",text); speak(text); }
+function greet(){
+  const n=((S.profile||{}).fullName||"").split(" ")[0];
+  add("bot","Hi"+(n?" "+n:"")+", I'm Rose. Tap the mic and talk to me, or type. I can walk you through your top jobs, your odds at each stage, how to boost them, your résumé, or run a quick mock interview. What would you like to work on?");
+}
+
+/* ---------- Speech out ---------- */
+const synth=window.speechSynthesis||null;
+function voices(){ return synth?synth.getVoices().filter(v=>/^en/i.test(v.lang)):[]; }
+function pickVoice(){
+  const vs=voices(); if(!vs.length) return null;
+  return vs.find(v=>v.name===R.voice)||vs.find(v=>/en-US/i.test(v.lang)&&/(female|samantha|aria|jenny|zira|ava|allison|google us english)/i.test(v.name))||vs.find(v=>/en-US/i.test(v.lang))||vs[0];
+}
+function fillVoices(){
+  const sel=$("#rc_voice"), vs=voices();
+  if(!synth){ sel.innerHTML='<option>Not supported in this browser</option>'; sel.disabled=true; return; }
+  const cur=pickVoice();
+  sel.innerHTML=vs.map(v=>'<option'+(cur&&v.name===cur.name?' selected':'')+'>'+esc(v.name)+'</option>').join("")||'<option>Default voice</option>';
+}
+if(synth){ fillVoices(); synth.onvoiceschanged=fillVoices; }
+function plain(t){ return String(t).replace(/[*_#`>]/g,"").replace(/https?:\/\/\S+/g,"the link").replace(/[•·]/g,",").replace(/\s+/g," ").trim(); }
+function speak(text){
+  if(!R.speak||!synth){ afterSpeak(); return; }
+  synth.cancel();
+  const u=new SpeechSynthesisUtterance(plain(text)); const v=pickVoice(); if(v){ u.voice=v; u.lang=v.lang; } u.rate=R.rate;
+  u.onend=afterSpeak; u.onerror=()=>{};
+  synth.speak(u);
+}
+function stopSpeaking(){ if(synth) synth.cancel(); }
+function afterSpeak(){ if(R.hands&&!panel.hidden&&!R.listening) setTimeout(()=>{ if(!panel.hidden) startListening(); },350); }
+
+/* ---------- Speech in ---------- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null, heard="";
+if(!SR){ mic.title="Voice input works in Chrome, Edge and Safari. You can still type."; mic.setAttribute("aria-label","Voice input isn't supported in this browser"); }
+function startListening(){
+  if(!SR){ add("sys","Voice input isn't available in this browser. Try Chrome, Edge or Safari, or type your message."); return; }
+  if(R.listening) return;
+  stopSpeaking(); heard="";
+  rec=new SR(); rec.lang="en-US"; rec.interimResults=true; rec.continuous=!!R.practice; rec.maxAlternatives=1;
+  rec.onresult=e=>{ let fin="",tmp=""; for(let i=0;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) fin+=r[0].transcript+" "; else tmp+=r[0].transcript; } heard=fin; inp.value=(fin+tmp).trim(); };
+  rec.onerror=e=>{ if(e.error==="not-allowed"||e.error==="service-not-allowed") add("sys","Microphone is blocked. Allow it in your browser's site settings, then tap the mic again."); else if(e.error!=="no-speech"&&e.error!=="aborted") add("sys","I didn't catch that ("+e.error+"). Tap the mic to try again."); };
+  rec.onend=()=>{ R.listening=false; mic.classList.remove("live"); mic.textContent="🎤"; const t=(heard||inp.value).trim(); if(t){ inp.value=""; send(t); } };
+  try{ rec.start(); R.listening=true; mic.classList.add("live"); mic.textContent="■"; mic.title="Tap to stop"; }catch(e){ R.listening=false; }
+}
+function stopListening(){ if(rec&&R.listening){ try{ rec.stop(); }catch(e){} } }
+mic.onclick=()=>R.listening?stopListening():startListening();
+$("#rc_form").onsubmit=e=>{ e.preventDefault(); const t=inp.value.trim(); if(t){ inp.value=""; send(t); } };
+$("#rc_hands").onclick=()=>{ R.hands=!R.hands; persist(); paint(); add("sys",R.hands?"Hands-free is on. I'll listen again after each reply.":"Hands-free is off."); };
+$("#rc_speak").onclick=()=>{ R.speak=!R.speak; if(!R.speak) stopSpeaking(); persist(); paint(); };
+
+/* ---------- Settings ---------- */
+$("#rc_gear").onclick=()=>{ const s=$("#rc_set"); s.hidden=!s.hidden; $("#rc_gear").setAttribute("aria-expanded",String(!s.hidden)); $("#rc_key").value=R.ai.key?"••••••••"+R.ai.key.slice(-4):""; $("#rc_model").value=R.ai.model; $("#rc_rate").value=String(R.rate); fillVoices(); };
+$("#rc_voice").onchange=e=>{ R.voice=e.target.value; persist(); speak("Hi, this is how I'll sound."); };
+$("#rc_rate").onchange=e=>{ R.rate=+e.target.value; persist(); };
+$("#rc_saveKey").onclick=()=>{
+  const v=$("#rc_key").value.trim(), m=$("#rc_model").value;
+  if(v&&!/^•/.test(v)){ if(!/^sk-ant-/.test(v)){ $("#rc_setMsg").textContent="That doesn't look like a Claude API key (it starts with sk-ant-)."; return; } R.ai.key=v; }
+  R.ai.model=m; lsSet(RC_AI,JSON.stringify(R.ai)); $("#rc_setMsg").textContent=R.ai.key?"Saved. Rose will use Claude.":"Saved."; paint();
+};
+$("#rc_clearKey").onclick=()=>{ R.ai={key:"",model:$("#rc_model").value}; try{ localStorage.removeItem(RC_AI); }catch(e){} $("#rc_key").value=""; $("#rc_setMsg").textContent="Key removed. Rose answers on-device."; paint(); };
+$("#rc_clearChat").onclick=()=>{ R.log=[]; R.practice=null; persist(); greet(); };
+
+/* ---------- Data helpers (reuse the app's own models) ---------- */
+const jn=j=>[j.company,j.title].filter(Boolean).join(", ")||"that job";
+const live=()=>S.jobs.filter(j=>!["rejected","withdrawn"].includes(j.stage));
+function findJob(t){
+  const q=" "+t.toLowerCase()+" "; let best=null,score=0;
+  S.jobs.forEach(j=>{ let s=0; const c=String(j.company||"").toLowerCase().trim(), ti=String(j.title||"").toLowerCase();
+    if(c&&q.includes(c)) s+=3; else if(c&&c.split(/\s+/).some(w=>w.length>3&&q.includes(" "+w))) s+=2;
+    ti.split(/\s+/).forEach(w=>{ if(w.length>4&&q.includes(w)) s+=0.5; });
+    if(s>score){ score=s; best=j; } });
+  return score>=2?best:null;
+}
+function focusJob(t){
+  const j=findJob(t); if(j) return j;
+  const act=live().filter(x=>x.stage!=="saved"&&x.stage!=="offer");
+  if(act.length) return act.sort((a,b)=>ORDER.indexOf(b.stage)-ORDER.indexOf(a.stage))[0];
+  const tp=top10().top; return tp.length?tp[0].j:null;
+}
+function oddsLine(j){
+  const ch=chainFrom(j); if(!ch) return jn(j)+" is marked "+stageLabel(j.stage)+", so there are no odds to show.";
+  const next=ch.gates[0];
+  return "For "+jn(j)+", you're at "+stageLabel(j.stage)+". Your chance to "+GATES[next.i].l.toLowerCase()+" is about "+pct(next.p)+", and your odds of an offer from here are about "+pct(ch.offer)+".";
+}
+function boostLines(j){
+  const ch=chainFrom(j); if(!ch) return [];
+  const out=[], base=ch.offer, tryIt=(l,o)=>{ const c=chainFrom(j,o); if(c&&c.offer-base>0.0005) out.push(l+" (about +"+Math.max(1,Math.round((c.offer-base)*100))+" points)"); };
+  if(!j.referral&&ch.gi===0) tryIt("get a referral",{referral:true});
+  const fc=fitCard(j);
+  if(fc.cov.miss.length){ const add=fc.cov.miss.slice(0,3), tot=fc.cov.hit.length+fc.cov.miss.length; tryIt("show real evidence of "+add.join(", "),{fit:fc.fit+W.skills*((fc.cov.hit.length+add.length)/tot-fc.sc.skills)*100}); }
+  const pr=practiceFor(j); if(!pr||pr.roseAvg<4) tryIt(pr?"lift your Studio score from "+pr.roseAvg.toFixed(1)+" to 4":"practice in the Interview Studio to a 4 out of 5 average",{roseAvg:4});
+  return out;
+}
+
+/* ---------- Mock interview ---------- */
+const QBANK=[
+  "Tell me about yourself and why you're interested in this role.",
+  "Tell me about a time you delivered results under a tight deadline.",
+  "Describe a time you disagreed with a stakeholder. How did you handle it?",
+  "Tell me about a time you used data to change a decision.",
+  "Give me an example of a process you simplified or improved.",
+  "Tell me about a time you failed or missed a goal. What did you learn?",
+  "Describe a time you had to influence people who didn't report to you.",
+  "Tell me about the most difficult supplier or vendor situation you've managed.",
+  "Walk me through how you prioritize when everything is urgent.",
+  "Tell me about a time you took ownership of a problem outside your job description."];
+function nextQuestion(){
+  const p=R.practice; p.n++;
+  let q;
+  if(p.job&&p.n%3===0){ const kw=fitCard(p.job).cov.hit.concat(fitCard(p.job).cov.miss).filter(k=>!p.used.includes(k))[0]; if(kw){ p.used.push(kw); q="This role asks for "+kw+". Tell me about a specific time you used it, and what the result was."; } }
+  if(!q){ const pool=QBANK.filter(x=>!p.used.includes(x)); q=(pool.length?pool:QBANK)[Math.floor(Math.random()*(pool.length||QBANK.length))]; p.used.push(q); }
+  p.q=q; return "Question "+p.n+": "+q+(p.n===1?" Take your time. Tap the mic, answer out loud, and tap again when you're done.":"");
+}
+function feedback(ans){
+  const t=" "+ans.toLowerCase()+" ", words=ans.split(/\s+/).filter(Boolean).length;
+  const has=re=>re.test(t);
+  const S_=has(/\b(when i was|at my|while|our team|the company|we had|there was|back in)\b/), T_=has(/\b(my goal|i was responsible|i needed to|the task|i was asked|my job was|objective)\b/);
+  const A_=has(/\bi (led|built|created|decided|analy[sz]ed|negotiated|designed|launched|set up|worked with|partnered|drove|ran|implemented|proposed|met with)\b/), R_=has(/(\bresult|\bas a result|\bwhich (led|meant)|\bincreas|\breduc|\bsav(ed|ing)|\bimprov|\d+\s?%|\$\s?\d)/);
+  const metrics=(ans.match(/(\d+(\.\d+)?\s?(%|percent|k\b|million|thousand)|\$\s?\d+|\b\d{2,}\b)/gi)||[]).length;
+  const iCount=(t.match(/\bi\b/g)||[]).length, weCount=(t.match(/\bwe\b/g)||[]).length;
+  const fillers=(t.match(/\b(um+|uh+|like,|you know|kind of|sort of|basically)\b/g)||[]).length;
+  let sc=1+[S_||T_,A_,R_,metrics>0,words>=80&&words<=350].filter(Boolean).length*0.8; sc=Math.min(5,Math.round(sc*2)/2);
+  const good=[], fix=[];
+  if(S_||T_) good.push("you set up the situation"); else fix.push("open with one or two sentences of context: where you were and what was at stake");
+  if(A_) good.push("you named your own actions"); else fix.push("say clearly what you did, using I rather than we");
+  if(R_) good.push("you got to a result"); else fix.push("finish with the result and why it mattered");
+  if(metrics) good.push("you used "+(metrics>1?metrics+" numbers":"a number")); else fix.push("add at least one number, like time saved, cost, volume or a percentage");
+  if(words<80) fix.push("go a little deeper; that was about "+words+" words, aim for 150 to 300, roughly one to two minutes");
+  else if(words>350) fix.push("tighten it up; that was about "+words+" words, aim for under 300");
+  if(weCount>iCount+2) fix.push("you said we "+weCount+" times and I "+iCount+" times, so own more of the story");
+  if(fillers>=3) fix.push("watch the filler words, I counted "+fillers);
+  return "I'd score that about "+sc+" out of 5. "+(good.length?"Good: "+good.join(", ")+". ":"")+(fix.length?"To make it stronger, "+fix.slice(0,3).join("; ")+".":"That's a strong STAR answer.")+" Say next question when you're ready, or stop practice.";
+}
+
+/* ---------- On-device brain ---------- */
+const TABS=[["profile",/profile|intake/],["resume",/r[eé]sum[eé]|cv\b/],["tailor",/tailor/],["jobs",/job fit|jobs?\b|fit/],["top10",/top ?10|top ten|packet/],["apps",/applications?|odds|pipeline/],["practice",/practice|weather|outfit/],["insights",/learning|insights?|loop/],["admin",/admin|workflow|approv/],["data",/data|export|backup/]];
+function local(t){
+  const s=t.toLowerCase().trim(), P=S.profile||{};
+  if(R.practice){
+    if(/\b(stop|end|quit|exit|done practic|finish)\b/.test(s)){ const n=R.practice.n; R.practice=null; paint(); return "Nice work. We covered "+n+" question"+(n===1?"":"s")+". For full scoring and recordings, open the Interview Studio from the top of the page."; }
+    if(/\b(next|another|skip|new question)\b/.test(s)&&s.split(/\s+/).length<6) return nextQuestion();
+    if(/\b(repeat|again|say that again)\b/.test(s)&&s.split(/\s+/).length<6) return R.practice.q;
+    return feedback(t);
+  }
+  const nav=s.match(/^(?:please\s+)?(?:open|go to|show me|show|take me to|switch to)\s+(?:the\s+)?(.+?)(?:\s+tab|\s+page)?[.!?]*$/);
+  if(nav){
+    if(/studio|interview studio|recorder/.test(nav[1])){ setTimeout(()=>location.href="../",900); return "Opening the Interview Studio."; }
+    const hit=TABS.find(([,re])=>re.test(nav[1])); if(hit){ showTab(hit[0]); window.scrollTo(0,0); return "Here's the "+$('#tabs button[data-t="'+hit[0]+'"]').textContent.replace(/^[^A-Za-z]*·?\s*/,"")+" tab."; }
+  }
+  if(/^(hi|hello|hey|good (morning|afternoon|evening))\b/.test(s)&&s.split(/\s+/).length<5) return "Hello! What would you like to work on: your top jobs, your odds, your résumé, or a quick mock interview?";
+  if(/\b(thank|thanks|appreciate)\b/.test(s)) return "You're welcome. You've got this.";
+  if(/\b(help|what can you do|how do you work|commands)\b/.test(s)) return "Try asking: what are my top jobs, what are my odds at a company, how do I boost my odds, how's my résumé, where do my applications stand, or quiz me for a mock interview. You can also say open practice, or any tab name. Turn on 🔁 for hands-free.";
+  if(/\b(quiz me|mock interview|practice (question|interview)|interview me|ask me (a|an|some)|let'?s practice)\b/.test(s)){
+    R.practice={n:0,used:[],q:"",job:findJob(t)}; paint();
+    return (R.practice.job?"Let's practice for "+jn(R.practice.job)+". ":"Let's practice. ")+"I'll ask a question, you answer out loud, and I'll give quick STAR feedback. Say stop practice any time. "+nextQuestion();
+  }
+  if(/\b(top|best|strongest)\b.*\b(jobs?|match(es)?|roles?|openings?|fits?)\b|\btop ?10\b|\bwhat should i apply\b/.test(s)){
+    const tp=top10().top; if(!tp.length) return "You don't have saved jobs to rank yet. Add some in the Job fit tab, or import openings in the Top 10 packet tab, and I'll rank them.";
+    return "Your best matches right now: "+tp.slice(0,3).map((x,i)=>(i+1)+", "+jn(x.j)+" at "+Math.round(x.fc.fit)+" percent fit").join("; ")+"."+(tp.length>3?" There are "+tp.length+" in your Top 10 packet.":"");
+  }
+  if(/\b(boost|improve|increase|raise|better)\b.*\b(odds|chances?|fit|score)\b|\bhow (can|do) i (improve|do better|get the job)\b/.test(s)){
+    const j=focusJob(t); if(!j) return "Save a job first and I can tell you what would move your odds the most.";
+    const b=boostLines(j); return b.length?"For "+jn(j)+", the biggest boosts are: "+b.join("; ")+".":"For "+jn(j)+", you've already covered the big levers. Keep your debriefs updated after each round.";
+  }
+  if(/\b(odds|chances?|likel(y|ihood)|probability)\b/.test(s)){
+    const j=focusJob(t); if(!j) return "I don't see any saved jobs yet. Add one in the Job fit tab and I'll estimate your odds.";
+    return oddsLine(j)+" These are estimates, not guarantees.";
+  }
+  if(/\b(applications?|pipeline|status|where do (i|things) stand|how am i doing|summary|progress)\b/.test(s)){
+    if(!S.jobs.length) return "Your pipeline is empty so far. Save a few jobs and mark them applied as you go.";
+    const c={}; S.jobs.forEach(j=>c[j.stage]=(c[j.stage]||0)+1);
+    return "You have "+S.jobs.length+" job"+(S.jobs.length===1?"":"s")+": "+STAGES.filter(x=>c[x.k]).map(x=>c[x.k]+" "+x.l.toLowerCase()).join(", ")+".";
+  }
+  if(/\b(tell me about|how do i (fit|match)|fit for|match for|missing)\b/.test(s)||findJob(t)){
+    const j=findJob(t); if(j){ const fc=fitCard(j); return jn(j)+" is a "+Math.round(fc.fit)+" percent fit. "+(fc.cov.hit.length?"You match on "+fc.cov.hit.slice(0,4).join(", ")+". ":"")+(fc.cov.miss.length?"The posting also wants "+fc.cov.miss.slice(0,4).join(", ")+", so add real examples if you have them.":"")+" "+oddsLine(j); }
+  }
+  if(/\b(r[eé]sum[eé]|cv)\b/.test(s)){
+    const txt=(S.resume&&S.resume.text)||""; if(!txt.trim()) return "I don't have your résumé yet. Paste it in the Résumé tab and ask me again.";
+    const fcx=formatChecks(txt), miss=fcx.checks.filter(c=>!c.ok);
+    return "Your résumé passes "+fcx.checks.filter(c=>c.ok).length+" of "+fcx.checks.length+" format checks."+(miss.length?" To fix: "+miss.slice(0,3).map(c=>c.l).join("; ")+".":" Nice and clean.")+" For keyword match against a job, use the Résumé or Tailor tab.";
+  }
+  if(/\b(profile|target role|who am i|about me|my goals?)\b/.test(s)){
+    if(!P.targetRole&&!P.skills) return "Your profile is mostly empty. Fill in the Profile tab so my scores match what you want.";
+    return "You're targeting "+(P.targetRole||"a role you haven't named yet")+(P.industry?" in "+P.industry:"")+(P.location?", based in "+P.location:"")+(P.salaryMin?", with a minimum base of $"+Number(P.salaryMin).toLocaleString():"")+"."+(P.skills?" Key skills: "+P.skills+".":"");
+  }
+  if(/\b(weather|outfit|wear)\b/.test(s)){ showTab("practice"); return "I opened the Practice tab. Use the interview-day weather and outfit card there."; }
+  return null;
+}
+const FALLBACK="I can help with your top jobs, your odds, how to boost them, your résumé, your pipeline, or a mock interview. Try saying: what are my odds at a company, or quiz me."+" For open-ended coaching, add a Claude API key in ⚙️ settings.";
+
+/* ---------- Claude (optional, user's own key) ---------- */
+function context(){
+  const P=Object.assign({},S.profile||{}); delete P.email; delete P.phone;
+  const jobs=S.jobs.slice(0,40).map(j=>{ const fc=fitCard(j), ch=chainFrom(j); return {company:j.company,title:j.title,location:j.location,salary:j.salary,stage:stageLabel(j.stage),fitPercent:Math.round(fc.fit),matchedKeywords:fc.cov.hit.slice(0,8),missingKeywords:fc.cov.miss.slice(0,8),nextStep:ch?GATES[ch.gates[0].i].l:null,nextStepOdds:ch?pct(ch.gates[0].p):null,offerOdds:ch?pct(ch.offer):null,boosts:boostLines(j)}; });
+  return {profile:P,resumeText:(S.resume&&S.resume.text)||"",jobs,studio:studioStats().filter(s=>s.answered).map(s=>({company:s.name,answers:s.answered,roseAvg:s.roseAvg}))};
+}
+const SYS="You are Coach Rose, a warm, practical, encouraging job coach inside the Coach Rose Job Coach web app. The user is usually talking to you by voice and your replies are read aloud, so: answer in 2 to 5 short spoken sentences, no markdown, no bullet lists, no headings, no emoji, and spell out symbols. Ask at most one question at a time. Ground everything in the user's data below; if the data doesn't say, say so rather than guessing, and never invent job details. When the user asks for a mock interview, ask one interview question at a time, wait for their answer, then give brief STAR-based feedback (situation, task, action, result, a number) with a score out of 5 and the next question. Never ask about or use age, race, gender, disability or other protected traits. Odds in the data are estimates, not guarantees. You are not a lawyer or financial adviser. App tabs the user can open: Profile, Résumé, Tailor, Job fit, Top 10 packet, Applications and odds, Practice, Learning loop, Admin, Data; the Interview Studio records and scores practice answers.";
+let busy=false;
+async function claude(){
+  const turns=R.log.filter(m=>m.who==="me"||m.who==="bot").slice(-24); while(turns.length&&turns[0].who!=="me") turns.shift();
+  const msgs=[]; turns.forEach(m=>{ const role=m.who==="me"?"user":"assistant"; if(msgs.length&&msgs[msgs.length-1].role===role) msgs[msgs.length-1].content+="\n"+m.text; else msgs.push({role,content:m.text}); });
+  const body={model:R.ai.model,max_tokens:1024,output_config:{effort:"low"},system:SYS+"\n\nUSER DATA (JSON):\n"+JSON.stringify(context()),messages:msgs};
+  const headers={"content-type":"application/json","x-api-key":R.ai.key,"anthropic-version":"2026-10-21","anthropic-dangerous-direct-browser-access":"true"};
+  if(R.ai.model!=="claude-haiku-5-5"){ body.fallbacks="default"; headers["anthropic-beta"]="server-side-fallback-2026-07-01"; }
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers,body:JSON.stringify(body)});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok){ const m=(d.error&&d.error.message)||("HTTP "+r.status); const e=new Error(m); e.status=r.status; throw e; }
+  if(d.stop_reason==="refusal") return "I can't help with that one. Let's get back to your search.";
+  return (d.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").trim()||"Sorry, I lost my train of thought. Could you say that again?";
+}
+
+/* ---------- Router ---------- */
+async function send(text){
+  if(busy) return; add("me",text);
+  const quick=/^(?:please\s+)?(open|go to|show|take me to|switch to)\b/i.test(text)||/\b(stop|end|quit) practice\b/i.test(text);
+  if(R.ai.key&&!quick&&!R.practice){
+    busy=true; add("sys","Rose is thinking…");
+    try{ const a=await claude(); R.log.pop(); say(a); }
+    catch(e){ R.log.pop(); const a=local(text); add("sys",e.status===401?"Your Claude API key was rejected. Check it in ⚙️ settings.":"Couldn't reach Claude ("+e.message+"). Answering on-device instead."); say(a||FALLBACK); }
+    finally{ busy=false; }
+    return;
+  }
+  const a=local(text); say(a||FALLBACK);
+}
+if(lsGet("jobcoach_rose_open")==="1") open();
+window.addEventListener("pagehide",()=>lsSet("jobcoach_rose_open",panel.hidden?"0":"1"));
+})();
+</script>
 </body>
 </html>
