@@ -92,7 +92,7 @@ footer{max-width:1040px;margin:0 auto;padding:8px 16px 32px;color:var(--quiet);f
       <div class="sub">Profile · résumé · job fit · odds at every stage · debrief refresh · learning loop</div>
     </div>
     <div class="hlinks">
-      <a class="btn ghost small" href="../">🎙️ Interview Studio</a>
+      <a class="btn ghost small" href="../studio/">🎙️ Interview Studio</a>
       <button class="btn ghost small" id="themeBtn" type="button">🌓 Theme</button>
     </div>
   </div>
@@ -1194,15 +1194,15 @@ $("#pr_send").onclick=()=>{
   const i=list.findIndex(c=>c.id===id); if(i>=0) list[i]=co; else list.push(co);
   if(!lsSet(STUDIO_CKEY,JSON.stringify(list))){ $("#pr_msg").textContent="Couldn't write to browser storage."; return; }
   j.studioCompanyId=id; save();
-  $("#pr_msg").innerHTML='✓ '+qs.length+' questions sent. <a href="../?company='+encodeURIComponent(id)+'">Open in the Studio →</a>';
+  $("#pr_msg").innerHTML='✓ '+qs.length+' questions sent. <a href="../studio/?company='+encodeURIComponent(id)+'">Open in the Studio →</a>';
   renderStudio();
 };
 function renderStudio(){
   const st=studioStats().filter(s=>s.answered>0||S.jobs.some(j=>j.studioCompanyId===s.id));
-  if(!st.length){ $("#studioStats").innerHTML='<p class="muted">No practice yet on this device. <a href="../">Open the Interview Studio</a> and answer a few questions; Rose\'s scores will show up here.</p>'; return; }
+  if(!st.length){ $("#studioStats").innerHTML='<p class="muted">No practice yet on this device. <a href="../studio/">Open the Interview Studio</a> and answer a few questions; Rose\'s scores will show up here.</p>'; return; }
   $("#studioStats").innerHTML='<div class="tablewrap"><table><tr><th>Studio company</th><th>Answers</th><th>Rose avg /5</th><th>Your avg /5</th><th>Linked application</th></tr>'+st.map(s=>{
     const j=S.jobs.find(x=>x.studioCompanyId===s.id);
-    return '<tr><td><a href="../?company='+encodeURIComponent(s.id)+'">'+esc(s.name)+'</a></td><td>'+s.answered+'</td><td>'+(s.roseAvg?s.roseAvg.toFixed(1):"–")+'</td><td>'+(s.selfAvg?s.selfAvg.toFixed(1):"–")+'</td><td>'+(j?esc(j.company+" · "+j.title):'<span class="muted">Link one in Applications</span>')+'</td></tr>';
+    return '<tr><td><a href="../studio/?company='+encodeURIComponent(s.id)+'">'+esc(s.name)+'</a></td><td>'+s.answered+'</td><td>'+(s.roseAvg?s.roseAvg.toFixed(1):"–")+'</td><td>'+(s.selfAvg?s.selfAvg.toFixed(1):"–")+'</td><td>'+(j?esc(j.company+" · "+j.title):'<span class="muted">Link one in Applications</span>')+'</td></tr>';
   }).join("")+'</table></div>';
 }
 
@@ -2024,7 +2024,7 @@ function local(t){
   }
   const nav=s.match(/^(?:please\s+)?(?:open|go to|show me|show|take me to|switch to)\s+(?:the\s+)?(.+?)(?:\s+tab|\s+page)?[.!?]*$/);
   if(nav){
-    if(/studio|interview studio|recorder/.test(nav[1])){ setTimeout(()=>location.href="../",900); return "Opening the Interview Studio."; }
+    if(/studio|interview studio|recorder/.test(nav[1])){ setTimeout(()=>location.href="../studio/",900); return "Opening the Interview Studio."; }
     const hit=TABS.find(([,re])=>re.test(nav[1])); if(hit){ showTab(hit[0]); window.scrollTo(0,0); return "Here's the "+$('#tabs button[data-t="'+hit[0]+'"]').textContent.replace(/^[^A-Za-z]*·?\s*/,"")+" tab."; }
   }
   if(/^(hi|hello|hey|good (morning|afternoon|evening))\b/.test(s)&&s.split(/\s+/).length<5) return "Hello! What would you like to work on: your top jobs, your odds, your résumé, or a quick mock interview?";

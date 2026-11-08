@@ -6,16 +6,17 @@ Everything is stored **locally in your browser** (localStorage) — nothing is u
 ## What's in this folder
 | File | Purpose |
 |------|---------|
-| `index.html` | The entire app. This is the only file that actually matters. |
+| `index.html` | **Front door** landing page for the Job Coach (the main address): how it works, each section of the Candidate-to-Offer Camp, previews, weekly rhythm, and downloads of the end user guide (`home/docs/`, PDF and recording-script slideshow). Old Studio links with `?company=` are forwarded to `/studio/`. |
+| `studio/index.html` | The Mock Interview Studio, live at `/studio/`. The whole app is this one file. |
 | `coach/index.html` | Coach Rose Job Coach: profile, résumé check, job fit cards, application odds, debrief refresh and learning loop, interview-day weather and outfit advice (Practice tab), and an Admin tab for résumé import and approval/notification workflows. Live at `/coach/`; shares browser storage with the Studio. Includes **Talk to Rose**, a voice chat assistant (🎙️ button, bottom right): speak or type, and Rose answers out loud about your top jobs, odds, boosts, résumé and pipeline, or runs a spoken mock interview with STAR feedback. Voice input works in Chrome, Edge and Safari. Optional: add your own Claude API key in the chat's ⚙️ settings for open-ended coaching (key stays in that browser). |
-| `home/index.html` | **Front door** landing page for the Job Coach (live at `/home/`): how it works, each section of the Candidate-to-Offer Camp, previews, weekly rhythm, and downloads of the end user guide (`home/docs/`, PDF and recording-script slideshow). |
+| `home/` | Images and guide downloads for the front door. `home/index.html` forwards the old `/home/` address to the main address. |
 | `staticwebapp.config.json` | Config for **Azure Static Web Apps** (sets microphone permission + 
 routing). |
 | `netlify.toml` | Config for **Netlify** (sets microphone permission). |
 | `.nojekyll` | Tells **GitHub Pages** to serve files as-is. |
 | `README.md` | This file. |
 > ⚠️ **Why hosting matters:** browsers only grant microphone access on pages served
-> over **https://** (or from `localhost`). Opening `index.html` by double-clicking it
+> over **https://** (or from `localhost`). Opening `studio/index.html` by double-clicking it
 > (a `file://` path) will block recording. Any of the options below fixes that.--
 ## Option A — GitHub Pages (free, ~5 min, easiest to share a link)
 1. Create a free account at github.com, then create a new **public** repository, e.g. `mock-interview`.
