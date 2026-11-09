@@ -1,0 +1,73 @@
+{
+  "exportedAt": "2026-11-09T10:27:55.305Z",
+  "schemaVersion": 1,
+  "profile": {},
+  "resume": {
+    "text": ""
+  },
+  "jobs": [],
+  "predLog": [],
+  "admin": {
+    "templates": [
+      {
+        "id": "mw9454xzqjct2",
+        "name": "Interview scheduled",
+        "subject": "Interview set: {{title}} at {{company}}",
+        "body": "Hi,\n\n{{candidate}} has an interview for {{title}} at {{company}} on {{interviewDate}}.\nLocation: {{location}}\nCurrent fit score: {{fit}}%\n\nSent by the Job Coach workflow \"{{workflow}}\"."
+      },
+      {
+        "id": "mw9454xzk16ni",
+        "name": "Stage update",
+        "subject": "{{company}}: moved to {{stage}}",
+        "body": "Hi,\n\n{{candidate}}'s application for {{title}} at {{company}} moved from {{fromStage}} to {{stage}} on {{date}}.\nFit score: {{fit}}%\nPosting: {{url}}\n\nApproved by: {{approver}} {{approvalComment}}"
+      },
+      {
+        "id": "mw9454xzrhdoc",
+        "name": "Offer received",
+        "subject": "Offer: {{title}} at {{company}}",
+        "body": "Good news: {{candidate}} received an offer for {{title}} at {{company}} ({{date}}).\nPosted salary: {{salary}}"
+      }
+    ],
+    "recipients": [],
+    "workflows": [
+      {
+        "id": "mw9454xzyiomj",
+        "name": "Final round: check fit, approve, notify",
+        "enabled": false,
+        "trigger": {
+          "type": "stage",
+          "value": "final"
+        },
+        "steps": [
+          {
+            "id": "mw9454xzwhqb1",
+            "type": "condition",
+            "field": "fit",
+            "op": "gte",
+            "value": "60",
+            "onFail": "stop"
+          },
+          {
+            "id": "mw9454xzhzn40",
+            "type": "approval",
+            "approver": "",
+            "approverEmail": "",
+            "note": "Review before telling the team.",
+            "emailApprover": true
+          },
+          {
+            "id": "mw9454xzhp0nk",
+            "type": "notify",
+            "templateId": "mw9454xzk16ni",
+            "recipients": [],
+            "extra": ""
+          }
+        ]
+      }
+    ],
+    "runs": [],
+    "outbox": [],
+    "imports": []
+  },
+  "k": {}
+}
